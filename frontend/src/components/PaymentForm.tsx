@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { type CardInput, type Registration } from '../api/client'
-import { formatCost } from '../format'
+import { formatCost, formatExpiryInput } from '../format'
 import { describePaymentError, type PaymentErrorView } from '../paymentErrors'
 import { validateCardNumber, validateCvv, validateExpiry } from '../validation'
 
@@ -125,7 +125,11 @@ export default function PaymentForm({
               aria-invalid={Boolean(errors[name])}
               aria-describedby={errors[name] ? `${name}-error` : undefined}
               onChange={(e) => {
-                setValues({ ...values, [name]: e.target.value })
+                const value =
+                  name === 'expiry_date'
+                    ? formatExpiryInput(e.target.value, values[name])
+                    : e.target.value
+                setValues({ ...values, [name]: value })
                 // A backend error is about the old value; blur checks the new one.
                 setErrors({ ...errors, [name]: null })
               }}

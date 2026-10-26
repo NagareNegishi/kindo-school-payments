@@ -44,6 +44,20 @@ async function fillValid() {
   await userEvent.type(screen.getByLabelText('CVV'), '123')
 }
 
+test('expiry gets its slash automatically and backspace removes it', async () => {
+  setup()
+  const expiry = screen.getByLabelText('Expiry (MM/YY)')
+
+  await userEvent.type(expiry, '1230')
+  expect(expiry).toHaveValue('12/30')
+
+  await userEvent.clear(expiry)
+  await userEvent.type(expiry, '12')
+  expect(expiry).toHaveValue('12/')
+  await userEvent.type(expiry, '{Backspace}')
+  expect(expiry).toHaveValue('12')
+})
+
 test('shows the amount from the trip and has no amount input', () => {
   setup()
 
