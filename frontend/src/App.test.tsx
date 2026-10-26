@@ -225,6 +225,114 @@ test('paying shows the receipt and drops the registration from the unpaid list',
   expect(screen.queryByText('Awaiting payment')).not.toBeInTheDocument()
 })
 
+test('switching parent closes an open payment form', async () => {
+  vi.spyOn(client, 'listActivities').mockResolvedValue([])
+  vi.spyOn(client, 'listParents').mockResolvedValue([
+    { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+    { id: 2, name: 'Tom Wilson', email: 'tom@example.com' },
+  ])
+  vi.spyOn(client, 'listStudents').mockResolvedValue([])
+  vi.spyOn(client, 'listRegistrations').mockImplementation(async (id) =>
+    id === 1
+      ? [
+          {
+            id: 7,
+            student_id: 3,
+            activity_id: 1,
+            status: 'registered',
+            created_at: '2026-10-01T00:00:00Z',
+            student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
+            activity: trip,
+          },
+        ]
+      : [],
+  )
+  render(<App />)
+
+  await screen.findByRole('option', { name: 'Aroha Smith' })
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Aroha Smith')
+  await userEvent.click(await screen.findByRole('button', { name: 'Pay' }))
+  expect(screen.getByLabelText('Card number')).toBeInTheDocument()
+
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Tom Wilson')
+
+  expect(screen.queryByLabelText('Card number')).not.toBeInTheDocument()
+})
+
+test('a declined payment keeps the form open with the processor message', async () => {
+  vi.spyOn(client, 'listActivities').mockResolvedValue([])
+  vi.spyOn(client, 'listParents').mockResolvedValue([
+    { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+  ])
+  vi.spyOn(client, 'listStudents').mockResolvedValue([])
+  vi.spyOn(client, 'listRegistrations').mockResolvedValue([
+    {
+      id: 7,
+      student_id: 3,
+      activity_id: 1,
+      status: 'registered',
+      created_at: '2026-10-01T00:00:00Z',
+      student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
+      activity: trip,
+    },
+  ])
+  vi.spyOn(client, 'createPayment').mockRejectedValue(
+    new client.ApiError(402, 'payment_declined', 'Card declined.', null),
+  )
+  render(<App />)
+
+  await screen.findByRole('option', { name: 'Aroha Smith' })
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Aroha Smith')
+  await userEvent.click(await screen.findByRole('button', { name: 'Pay' }))
+  await userEvent.type(
+    screen.getByLabelText('Card number'),
+    '4111 1111 1111 1111',
+  )
+  await userEvent.type(screen.getByLabelText('Expiry (MM/YY)'), '12/99')
+  await userEvent.type(screen.getByLabelText('CVV'), '123')
+  await userEvent.click(screen.getByRole('button', { name: /^Pay \$/ }))
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('Card declined.')
+  expect(screen.getByLabelText('Card number')).toHaveValue(
+    '4111 1111 1111 1111',
+  )
+})
+
+test('a child registered for one trip can still be picked for another', async () => {
+  const mia = { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 }
+  const otherTrip = { ...trip, id: 2, title: 'Museum visit' }
+  vi.spyOn(client, 'listActivities').mockResolvedValue([trip, otherTrip])
+  vi.spyOn(client, 'listParents').mockResolvedValue([
+    { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+  ])
+  vi.spyOn(client, 'listStudents').mockResolvedValue([mia])
+  vi.spyOn(client, 'listRegistrations').mockResolvedValue([
+    {
+      id: 7,
+      student_id: 3,
+      activity_id: 1,
+      status: 'registered',
+      created_at: '2026-10-01T00:00:00Z',
+      student: mia,
+      activity: trip,
+    },
+  ])
+  render(<App />)
+
+  await screen.findByRole('option', { name: 'Aroha Smith' })
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Aroha Smith')
+  const [forZoo, forMuseum] = await screen.findAllByRole('button', {
+    name: 'Register a child',
+  })
+
+  await userEvent.click(forMuseum)
+  expect(screen.getByRole('button', { name: 'Mia Smith' })).toBeEnabled()
+  await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+  await userEvent.click(forZoo)
+  expect(screen.getByRole('button', { name: /Mia Smith/ })).toBeDisabled()
+})
+
 test('opening a payment form closes the receipt on screen', async () => {
   const registration = (id: number): client.Registration => ({
     id,
