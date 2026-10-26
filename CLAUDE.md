@@ -156,6 +156,8 @@ From the implementation plan.
 
 - Never write or edit outside `/workspaces/kindo-school-payments` (scratchpad excepted).
 
+- Write and change files only with the Write and Edit tools, never through Bash (heredocs, `cp`, `sed -i`, redirects), so the user can review each change.
+
 ## Response style
 
 - Answer only what was asked. No preamble, postamble, or summary of what you just did.
