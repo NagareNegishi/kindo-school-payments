@@ -1,0 +1,30 @@
+# Permission presets
+
+Versioned snapshots of the git/tool permission policy for this project. These files are documentation only. The active policy is whatever sits in `.claude/settings.json`; nothing in this folder has any effect until you paste it there.
+
+## Why this exists
+
+Each change to the permission policy is a trade-off worth recording: what became allowed, what stayed blocked, and why. Keeping every version lets you roll back to a known state or start a new project from the preset that fits it.
+
+## Conventions
+
+- One file per version: `vN-short-slug.md`, numbered in the order they were designed.
+- Each file contains:
+  - what this preset is for and when to pick it
+  - a summary of what is allowed silently, what prompts, and what is hard-blocked
+  - deliberate omissions: things intentionally left out, so a future reader does not "fix" them
+  - the paste-ready `permissions` JSON block
+  - what changed from the previous version, except in v0
+- Files here are never edited to match later thinking. A new decision means a new version file.
+
+## Applying a preset
+
+Copy the JSON block from the version file into the `permissions` key of `.claude/settings.json`. If the preset requires a hook, the file says so and links to the hook script.
+
+## Versions
+
+- [v0 — baseline strict](v0-baseline-strict.md): `status`/`diff` allowed silently, `add`/`commit` prompt, all remote and branch operations hard-blocked. Captured 2026-07-12.
+- [v1 — allow git reads and scoped add](v1-allow-git-reads.md): v0 plus silent `git log`/`show`/`rev-parse`/`ls-remote` and explicit-path `git add`; bulk and force add forms hard-denied. Commit stays at ask, push stays denied. Designed 2026-07-12.
+- [v2 — exact-match fetch of origin main](v2-fetch-origin-main.md): v1 plus the exact command `git fetch origin main` allowed silently; every other fetch form hard-denied by the first PreToolUse hook (`fetch-guard.sh`). Designed 2026-07-12.
+- [v3 — no Claude co-author attribution](v3-no-coauthor.md): v2 permissions unchanged; second PreToolUse hook (`coauthor-guard.sh`) denies any command carrying a `Co-Authored-By` trailer or the Claude author identity, so Claude never appears as a contributor. Designed 2026-07-13.
+- [v4 — gh allowlist](v4-gh-allowlist.md): opens the GitHub CLI for the first time. Eleven `gh` forms allowed silently — ten that carry args (pr/issue/label create·edit·list-or-view, repo view) plus a bare-only `gh issue list` for `git-commit` issue lookup; a third PreToolUse hook (`gh-guard.sh`) hard-denies every other `gh` form (including `gh issue list` with any flag), backed by whole-group denies for all 30 unused groups. Its own file carries the full reasoning: why the surface is default-denied, which forms were opened and to which caller, and what the hook enforces. Designed 2026-07-13.

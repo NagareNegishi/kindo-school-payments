@@ -1,0 +1,34 @@
+# Local environment — never commit real values; the pattern lives in .env.example
+.devcontainer/.env
+
+# Claude session notes — local observation list; promoted to CLAUDE.md or a
+# skill only after user review, never committed
+docs/notes.md
+
+# Session baton — session-end/session-start handoff; local per-session state,
+# never committed. The template stays tracked to hold the shape.
+docs/session/baton.md
+
+# Local issue/PR drafts — github-issue-creator, pr-draft, and their publish
+# skills write here; drafts are ephemeral working files, never committed
+.github/drafts/
+
+# Subagent prompt captures + deferred analysis from build-orchestration
+# sessions — local data, never committed; the README and the capture template
+# stay tracked to hold the rules and the copyable shape
+build-orchestration/prompt-log/*
+!build-orchestration/prompt-log/README.md
+!build-orchestration/prompt-log/_template.md
+
+# Escalation strike count — live scratch
+build-orchestration/strike-count.md
+
+# SubagentStop route-guard loop-guard — live scratch
+build-orchestration/route-block-count
+
+# Per-subagent path-jail scope root (agent-scope-jail.sh); throwaway staging + log
+.agent-scope/
+
+# Bash-agent isolation worktrees (agent-worktree.sh); throwaway
+.agent-worktrees/
+/memory/
