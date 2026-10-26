@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db import SessionLocal, engine
 from app.errors import register_exception_handlers
+from app.logging_config import configure_logging
 from app.routers import activities, parents, payments, registrations
 from app.seed import seed
 
@@ -35,6 +36,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await engine.dispose()
 
 
+configure_logging()
 app = FastAPI(lifespan=lifespan)
 register_exception_handlers(app)
 app.include_router(activities.router)
