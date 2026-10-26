@@ -102,6 +102,12 @@ export default function App() {
     setReceipt(null)
   }
 
+  /** Opens the payment form, replacing any receipt on screen. */
+  function openPayment(registration: Registration | null) {
+    setReceipt(null)
+    setPayTarget(registration)
+  }
+
   /** Pays the open registration. Rejects on failure so the form can show it. */
   async function pay(card: CardInput) {
     if (payTarget === null || data === null) return
@@ -136,7 +142,7 @@ export default function App() {
     const registrations = await listRegistrations(data.parentId)
     setLoaded({ ...data, registrations })
     setRegisteringTripId(null)
-    setPayTarget(registrations.find((reg) => reg.id === created.id) ?? null)
+    openPayment(registrations.find((reg) => reg.id === created.id) ?? null)
   }
 
   function renderTripExtra(trip: Activity) {
@@ -206,7 +212,7 @@ export default function App() {
         {data !== null && (
           <UnpaidRegistrations
             registrations={data.registrations}
-            onPay={setPayTarget}
+            onPay={openPayment}
           />
         )}
         <h2 className="mb-4 text-lg font-semibold">Upcoming trips</h2>

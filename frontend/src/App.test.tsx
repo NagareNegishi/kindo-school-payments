@@ -225,6 +225,58 @@ test('paying shows the receipt and drops the registration from the unpaid list',
   expect(screen.queryByText('Awaiting payment')).not.toBeInTheDocument()
 })
 
+test('opening a payment form closes the receipt on screen', async () => {
+  const registration = (id: number): client.Registration => ({
+    id,
+    student_id: 3,
+    activity_id: 1,
+    status: 'registered',
+    created_at: '2026-10-01T00:00:00Z',
+    student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
+    activity: trip,
+  })
+  vi.spyOn(client, 'listActivities').mockResolvedValue([])
+  vi.spyOn(client, 'listParents').mockResolvedValue([
+    { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+  ])
+  vi.spyOn(client, 'listStudents').mockResolvedValue([])
+  vi.spyOn(client, 'listRegistrations')
+    .mockResolvedValueOnce([registration(7), registration(8)])
+    .mockResolvedValueOnce([registration(8)])
+  vi.spyOn(client, 'createPayment').mockResolvedValue({
+    id: 5,
+    registration_id: 7,
+    status: 'success',
+    amount_cents: 4550,
+    legacy_transaction_id: 'TXN-123',
+    card_last4: '1111',
+    created_at: '2026-10-26T01:00:00Z',
+    student_name: 'Mia Smith',
+    activity_title: 'Zoo trip',
+    activity_date: '2026-11-05',
+  })
+  render(<App />)
+
+  await screen.findByRole('option', { name: 'Aroha Smith' })
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Aroha Smith')
+  await userEvent.click(
+    (await screen.findAllByRole('button', { name: 'Pay' }))[0],
+  )
+  await userEvent.type(
+    screen.getByLabelText('Card number'),
+    '4111 1111 1111 1111',
+  )
+  await userEvent.type(screen.getByLabelText('Expiry (MM/YY)'), '12/99')
+  await userEvent.type(screen.getByLabelText('CVV'), '123')
+  await userEvent.click(screen.getByRole('button', { name: /^Pay \$/ }))
+  await screen.findByText('TXN-123')
+
+  await userEvent.click(screen.getByRole('button', { name: 'Pay' }))
+
+  expect(screen.getByLabelText('Card number')).toBeInTheDocument()
+  expect(screen.queryByText('TXN-123')).not.toBeInTheDocument()
+})
+
 test('a receipt is not shown under another parent after a switch mid-payment', async () => {
   const registration: client.Registration = {
     id: 7,
