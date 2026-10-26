@@ -68,6 +68,28 @@ test('a non-2xx response throws an ApiError with the shared error shape', async 
   })
 })
 
+test('a JSON error body of another shape still throws an ApiError', async () => {
+  stubFetch(500, { detail: 'oops' })
+
+  const error = await listActivities().catch((e: unknown) => e)
+  expect(error).toBeInstanceOf(ApiError)
+  expect(error).toMatchObject({
+    status: 500,
+    code: 'unknown_error',
+    message: 'Something went wrong.',
+    field: null,
+  })
+})
+
+test('a failed fetch rejects with the original error, not an ApiError', async () => {
+  const failure = new TypeError('Failed to fetch')
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(failure))
+
+  const error = await listActivities().catch((e: unknown) => e)
+  expect(error).toBe(failure)
+  expect(error).not.toBeInstanceOf(ApiError)
+})
+
 test('a non-JSON error body still throws an ApiError', async () => {
   vi.stubGlobal(
     'fetch',
