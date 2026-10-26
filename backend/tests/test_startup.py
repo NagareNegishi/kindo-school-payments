@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy import func, select
 
 from app.db import SessionLocal
@@ -11,3 +13,11 @@ async def test_startup_migrates_and_seeds():
         schools = await session.scalar(select(func.count()).select_from(School))
 
     assert (schools, parents) == (1, 3)
+
+
+async def test_startup_keeps_info_logging_on():
+    async with app.router.lifespan_context(app):
+        level = logging.getLogger().level
+
+    # Running the migrations must not reset the root logger to alembic.ini's WARNING.
+    assert level == logging.INFO

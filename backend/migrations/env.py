@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from logging.config import fileConfig
 
 from alembic import context
@@ -12,7 +13,7 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if config.config_file_name is not None:
+if config.config_file_name is not None and not logging.getLogger().hasHandlers():
     # Keep the app's and uvicorn's loggers alive when migrations run inside the app.
     fileConfig(config.config_file_name, disable_existing_loggers=False)
 

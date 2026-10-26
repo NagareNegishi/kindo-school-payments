@@ -19,6 +19,15 @@ def test_info_lines_go_to_stdout(monkeypatch, capsys):
     assert "payment attempt 1: success" in capsys.readouterr().out
 
 
+def test_info_is_enabled_when_the_server_already_set_a_handler(monkeypatch):
+    root = bare_root(monkeypatch)
+    root.addHandler(logging.NullHandler())
+
+    configure_logging()
+
+    assert root.level == logging.INFO
+
+
 def test_calling_twice_adds_one_handler(monkeypatch):
     root = bare_root(monkeypatch)
     configure_logging()

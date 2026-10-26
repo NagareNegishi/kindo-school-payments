@@ -5,9 +5,11 @@ import sys
 
 
 def configure_logging() -> None:
-    """Attach a stdout handler to the root logger; a no-op if one is already set."""
+    """Log at INFO and above; add a stdout handler unless the root logger already has one."""
     logging.basicConfig(
-        level=logging.INFO,
         stream=sys.stdout,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+    # basicConfig does nothing when a server such as `fastapi dev` set a handler first,
+    # so the level is set on its own.
+    logging.getLogger().setLevel(logging.INFO)
