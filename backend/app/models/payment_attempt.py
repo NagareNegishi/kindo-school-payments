@@ -1,11 +1,20 @@
 """Payment attempt table: one row per try to pay a registration."""
 
 import datetime as dt
+import enum
 
 from sqlalchemy import DateTime, ForeignKey, Index, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
+
+
+class AttemptStatus(enum.StrEnum):
+    """Values of `payment_attempt.status`; the column itself stays a plain string."""
+
+    PENDING = "pending"
+    SUCCESS = "success"
+    FAILED = "failed"
 
 
 class PaymentAttempt(Base):

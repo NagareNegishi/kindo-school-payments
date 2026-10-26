@@ -3,7 +3,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Activity, PaymentAttempt, Registration, Student
+from app.models import Activity, AttemptStatus, PaymentAttempt, Registration, Student
 from app.schemas.receipt import AttemptOut, ReceiptOut
 
 
@@ -15,7 +15,7 @@ async def load_receipt(session: AsyncSession, attempt_id: int) -> ReceiptOut | N
             .join(Registration, PaymentAttempt.registration_id == Registration.id)
             .join(Student, Registration.student_id == Student.id)
             .join(Activity, Registration.activity_id == Activity.id)
-            .where(PaymentAttempt.id == attempt_id, PaymentAttempt.status == "success")
+            .where(PaymentAttempt.id == attempt_id, PaymentAttempt.status == AttemptStatus.SUCCESS)
         )
     ).first()
     if row is None:

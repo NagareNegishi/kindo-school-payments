@@ -13,7 +13,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.errors import api_error
 from app.legacy.adapter import ChargeRequest, charge
 from app.legacy.processor import PaymentResponse
-from app.models import Activity, Parent, PaymentAttempt, Registration, Student
+from app.models import (
+    Activity,
+    AttemptStatus,
+    Parent,
+    PaymentAttempt,
+    Registration,
+    RegistrationStatus,
+    Student,
+)
 from app.schemas.payment import PaymentCreate
 
 logger = logging.getLogger(__name__)
@@ -56,21 +64,21 @@ async def _fail_stale_attempts(session: AsyncSession, registration_id: int) -> N
         update(PaymentAttempt)
         .where(
             PaymentAttempt.registration_id == registration_id,
-            PaymentAttempt.status == "pending",
+            PaymentAttempt.status == AttemptStatus.PENDING,
             PaymentAttempt.created_at < func.now() - STALE_AFTER,
         )
-        .values(status="failed", error_message="Payment timed out.")
+        .values(status=AttemptStatus.FAILED, error_message="Payment timed out.")
     )
 
 
 async def _reject_if_unpayable(session: AsyncSession, registration: Registration) -> None:
     """Raise a 409 if the registration is already paid or has a payment running."""
-    if registration.status == "paid":
+    if registration.status == RegistrationStatus.PAID:
         raise api_error(409, "already_paid", "This trip is already paid.", "registration_id")
     pending = await session.scalar(
         select(PaymentAttempt.id).where(
             PaymentAttempt.registration_id == registration.id,
-            PaymentAttempt.status == "pending",
+            PaymentAttempt.status == AttemptStatus.PENDING,
         )
     )
     if pending is not None:
@@ -87,7 +95,7 @@ async def _start_attempt(
     attempt = PaymentAttempt(
         registration_id=registration.id,
         amount_cents=activity.cost_cents,
-        status="pending",
+        status=AttemptStatus.PENDING,
         card_last4=card.card_last4,
     )
     session.add(attempt)
@@ -134,12 +142,12 @@ async def _record_result(
 ) -> None:
     """Store the processor's answer on the attempt and, on success, mark the registration paid."""
     if response.success:
-        attempt.status = "success"
+        attempt.status = AttemptStatus.SUCCESS
         attempt.legacy_transaction_id = response.transaction_id
         # Same commit as the attempt, so the two can never disagree.
-        registration.status = "paid"
+        registration.status = RegistrationStatus.PAID
     else:
-        attempt.status = "failed"
+        attempt.status = AttemptStatus.FAILED
         attempt.error_message = response.error_message or FALLBACK_ERROR
         logger.warning("payment declined for attempt %s: %s", attempt.id, attempt.error_message)
     await session.commit()

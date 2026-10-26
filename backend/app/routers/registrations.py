@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.db import Session, get_or_404
 from app.errors import api_error
-from app.models import Activity, Registration, Student
+from app.models import Activity, AttemptStatus, Registration, Student
 from app.schemas.payment import PaymentCreate
 from app.schemas.receipt import ReceiptOut
 from app.schemas.registration import RegistrationCreate, RegistrationOut
@@ -54,6 +54,6 @@ async def create_registration(body: RegistrationCreate, session: Session):
 async def create_payment(registration_id: int, body: PaymentCreate, session: Session):
     """Pay for a registration. Allowed after the trip date; a decline returns 402."""
     attempt = await pay_registration(session, registration_id, body)
-    if attempt.status != "success":
+    if attempt.status != AttemptStatus.SUCCESS:
         raise api_error(402, "payment_declined", attempt.error_message, None)
     return await load_receipt(session, attempt.id)
