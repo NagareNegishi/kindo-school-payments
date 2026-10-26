@@ -3,7 +3,7 @@
 import datetime as dt
 
 from fastapi import APIRouter
-from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from app.db import Session, get_or_404
 from app.errors import api_error
@@ -33,22 +33,19 @@ async def create_registration(body: RegistrationCreate, session: Session):
     )
     if activity.date < dt.date.today():
         raise api_error(409, "activity_past", "This trip has already happened.", "activity_id")
-    existing = await session.scalar(
-        select(Registration.id).where(
-            Registration.student_id == body.student_id,
-            Registration.activity_id == body.activity_id,
-        )
-    )
-    if existing is not None:
+    registration = Registration(student_id=body.student_id, activity_id=body.activity_id)
+    session.add(registration)
+    try:
+        await session.commit()
+    except IntegrityError:
+        # The unique constraint decides, so two simultaneous requests cannot both pass.
+        await session.rollback()
         raise api_error(
             409,
             "already_registered",
             "This child is already registered for this trip.",
             "student_id",
-        )
-    registration = Registration(student_id=body.student_id, activity_id=body.activity_id)
-    session.add(registration)
-    await session.commit()
+        ) from None
     await session.refresh(registration)  # loads the server-set created_at
     return registration
 
