@@ -1,7 +1,11 @@
 import { render, screen } from '@testing-library/react'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import App from './App'
 import * as client from './api/client'
+
+beforeEach(() => {
+  vi.spyOn(client, 'listParents').mockResolvedValue([])
+})
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -42,6 +46,18 @@ test('shows an empty state when there are no trips', async () => {
   vi.spyOn(client, 'listActivities').mockResolvedValue([])
   render(<App />)
   expect(await screen.findByText(/no upcoming trips/i)).toBeInTheDocument()
+})
+
+test('the header dropdown lists the parents from the API', async () => {
+  vi.spyOn(client, 'listActivities').mockResolvedValue([])
+  vi.spyOn(client, 'listParents').mockResolvedValue([
+    { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+  ])
+  render(<App />)
+
+  expect(
+    await screen.findByRole('option', { name: 'Aroha Smith' }),
+  ).toBeInTheDocument()
 })
 
 test('shows an error and logs it when loading fails', async () => {

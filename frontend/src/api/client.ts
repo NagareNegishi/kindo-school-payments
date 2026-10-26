@@ -13,6 +13,12 @@ export interface Activity {
   description: string | null
 }
 
+export interface Parent {
+  id: number
+  name: string
+  email: string
+}
+
 /** The backend's shared error shape: `{ code, message, field }`. */
 export class ApiError extends Error {
   readonly status: number
@@ -49,4 +55,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function listActivities(): Promise<Activity[]> {
   return request<Activity[]>('/activities')
+}
+
+export function listParents(): Promise<Parent[]> {
+  return request<Parent[]>('/parents')
 }
