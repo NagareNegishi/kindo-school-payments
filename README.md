@@ -1,101 +1,62 @@
-# Project Seed
+# Kindo School Payments
 
-Template repository: a stack-agnostic dev container with a Claude Code sandbox
-behind an outbound firewall, plus portable skills, path-scoped rules, and
-reference docs. New projects start from this repo (GitHub → "Use this template").
+A parent registers a child for a school field trip and pays for it online. Payments
+go to a mock legacy processor through an adapter. This is a take-home challenge with a
+2-4 hour budget.
 
-## Layout
+**Status:** setup only. The dev container, project docs and Claude Code config are in
+place. `backend/` and `frontend/` are not scaffolded yet, so there is nothing to run.
 
-- `.devcontainer/` — generic container: app service, firewall, Claude Code. Placeholders marked `<placeholder>`.
-- `.claude/` — permissions (`settings.json`), path-scoped rules example, portable skills.
-- `CONTEXT.md` + `context/` — skeleton for a per-project fast-orientation index (parts,
-  seams, invariants, direction), citation-per-line, pulled on demand rather than
-  auto-loaded. Fill in once the architecture settles — `CONTEXT.md` explains the
-  convention; delete both if the project stays small enough that CLAUDE.md covers it.
-- `docs/` — `progress.md` template, `plans/` convention, `reference/` concept docs,
-  `notes-system.md` (session-notes convention), `session/` (baton template for the
-  `session-start`/`session-end` skills; the filled `baton.md` is gitignored).
-  `reference/project-specific/` holds the seed author's own worked examples
-  (real domain, real AWS decisions) — read for ideas, don't carry into a new
-  project; delete it during instantiation if you don't want it.
-- `examples/stack/<stack>/` — real files from working projects; the stack-specific pieces the seed leaves out.
-- `examples/cicd/` — real GitHub Actions pipelines (test gates, deploy, dependency updates) from working projects.
-- `reusables/` — portable React/TypeScript pieces carried between projects: `component/` (app components), `shadcn/` (shadcn/ui primitives), `util/` (helpers and hooks). Copy what a new project needs; not wired into any build.
+## What it will do
 
-## Instantiation checklist
+1. The parent picks themselves from a header dropdown (a stand-in for login).
+2. They see upcoming trips with date, location and cost.
+3. They pick one of their children, or add a new one, and register for a trip.
+4. They pay with a card form. Validation runs on the frontend and the backend.
+5. They get a receipt with the transaction ID, amount, child, trip and last four card digits.
 
-1. Create a repo from this template and open it locally.
-2. Pick a stack from `examples/stack/` and merge its files over the `<placeholder>` markers (its README says what goes where): Dockerfile base image + packages, compose services/volumes, devcontainer ports/mounts/env/postCreate, firewall stack domains. Then delete the `examples/` entries you didn't use.
-3. Create `.devcontainer/.env` from `.env.example` and fill the values.
-4. Fill `CLAUDE.md` (skeleton at repo root) and `.claude/rules/` paths.
-   Review `LICENSE` — the seed ships MIT under the seed author's name; replace or
-   delete it if this project is closed-source or licensed differently.
-5. Open in the dev container ("Reopen in Container"). The firewall runs on every start; only allowlisted domains are reachable.
-6. Set up GitHub for the repo (one-time) — see "GitHub issue & PR skills" below:
-   authenticate `gh`, run `/label-setup`, and protect the default branch with
-   `scripts/protect-main.sh`. The publish and label skills stop until `gh` is
-   authenticated.
-7. After the first feature, start updating `docs/progress.md`. Once the architecture
-   has settled, fill in `CONTEXT.md` + `context/` (or delete both if the project
-   stays small enough that CLAUDE.md covers orientation on its own).
+A declined payment shows the processor message and can be retried on the same form.
+Full scope, data model, API and build order: [`docs/kindo-payments/`](docs/kindo-payments/).
 
-## Claude credentials volume
+## Stack
 
-`docker-compose.yml` mounts a volume with the fixed name `claude-credentials`:
-every project built from this seed shares one Claude login/config. Log in once
-in any of them; delete the volume to reset.
+| Part | Choice |
+| --- | --- |
+| Backend | Python 3.14, FastAPI, SQLAlchemy (async), Alembic, managed with uv 0.13.5 |
+| Frontend | React, Vite, Tailwind CSS |
+| Database | PostgreSQL 14.3 (asyncpg driver), database `kindo` |
+| Tests | pytest, Vitest + React Testing Library |
+| Deployment | Render free tier (planned) |
 
-## Firewall
+## Setup
 
-`.devcontainer/project-firewall.sh` allows GitHub (dynamic IP ranges),
-`api.anthropic.com`, `registry.npmjs.org`, and `api.osv.dev` (owasp-* skills).
-Add stack domains at the marked insertion point — examples ship ready-made blocks.
+You need Docker and VS Code with the Dev Containers extension.
 
-## GitHub issue & PR skills
+1. Create `.devcontainer/.env` with `POSTGRES_USER`, `POSTGRES_PASSWORD` and
+   `POSTGRES_DB=kindo`. The file is gitignored.
+2. Open the folder in VS Code and choose "Reopen in Container".
+3. Ports 8000 (backend), 5173 (frontend) and 5432 (Postgres) are forwarded.
 
-The seed ships paired skills for drafting and publishing GitHub issues and PRs:
-`github-issue-creator` + `issue-publish`, `pr-draft` + `pr-publish`, and
-`label-setup`. Three one-time steps per project before first use:
+The container blocks outbound traffic except an allowlist: GitHub, npm, PyPI,
+`api.anthropic.com`, `api.osv.dev`, `ui.shadcn.com` and the VS Code marketplace. If an
+npm or uv install is rejected, rerun `sudo /usr/local/bin/project-firewall.sh`.
 
-1. Authenticate `gh` yourself with `gh auth login`. No skill runs it, and the
-   publish and label skills stop with a reminder if `gh` isn't authenticated.
-2. Run `/label-setup` once. It creates the preset labels from
-   `.claude/skills/label-setup/labels.yml` in the repo. Publishing a draft that
-   names a label the repo lacks stops, because the publish skills never create
-   labels. Edit `labels.yml` first if you want a different set.
-3. Run `scripts/protect-main.sh` once to protect the default branch: require a
-   PR to merge, block force-push and deletion. It shows the plan and asks before
-   applying (`-y` skips the prompt); re-running updates the same ruleset. Needs
-   admin on the repo. Required status checks are off by default — flip on
-   `REQUIRED_CHECKS` in the script once this project has CI.
+Commands for running the backend, frontend and tests are in `CLAUDE.md` and will work
+once the projects are scaffolded.
 
-Then the flow is draft (`/pr-draft` or `/github-issue-creator`), review the file,
-publish (`/pr-publish` or `/issue-publish`). Design notes:
-`docs/skills/pr-issue-publish.md`.
+## Assumptions
 
-## Build orchestration
+- No login. A seeded parent is chosen from a dropdown, and each parent sees only their own children.
+- Currency is NZD.
+- The legacy processor is a mock. No real card data is used, and only the last four digits are stored.
+- Registration and payment are separate steps. An unpaid registration stays open.
 
-`build-orchestration` runs a feature build as a multi-agent session. The main Claude
-session acts as manager: it cuts the feature into units and spawns implementer,
-tester, and adviser subagents to build, test, and review the work to completion, with
-guardrails that keep it from thrashing on a unit that won't pass. Run it with
-`/build-orchestration`; it never starts on its own.
+## Repo layout
 
-It drives the subagent fleet in `.claude/agents/` (catalog in
-[`docs/agents/README.md`](docs/agents/README.md)) and needs a feature plan under
-`docs/plans/<feature>/` to build from. Design notes:
-[`docs/skills/build-orchestration-design-notes.md`](docs/skills/build-orchestration-design-notes.md).
+- `docs/kindo-payments/`: the challenge brief, implementation plan and legacy processor.
+- `.devcontainer/`: Docker Compose dev environment with the firewall.
+- `.claude/`: Claude Code settings, path-scoped rules and skills. Project instructions are in `CLAUDE.md`.
+- `examples/`: reference files left from the project template (CI pipelines and the Python + Postgres stack notes).
+- `reusables/`: React and TypeScript pieces to copy in. Not part of any build.
 
-## Claude attribution
-
-Claude must never appear as a contributor in projects built from this seed. The
-seed ships three layers, and all of them carry over on instantiation — keep them:
-
-1. `.claude/settings.json` sets `attribution.commit` to `""`, so Claude Code
-   does not generate the `Co-Authored-By` trailer.
-2. `CLAUDE.md` states the rule (top block, "Attribution").
-3. A PreToolUse hook (`.claude/hooks/coauthor-guard.sh`) blocks any command
-   carrying a co-author trailer or the Claude author identity, as a backstop
-   for the known cases where the setting alone fails.
-
-Policy and verification: `docs/permissions/v3-no-coauthor.md`.
+`AI_WORKINGS.md` (how AI was used on this project) will be added and linked here.
