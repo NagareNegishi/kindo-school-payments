@@ -4,6 +4,14 @@ A parent registers a child for a school field trip and pays for it online. The b
 
 How AI was used to build this, including where it went wrong: [AI_WORKINGS.md](AI_WORKINGS.md).
 
+## Live demo
+
+Deployed on Render (free plan): https://kindo-school-payments-frontend.onrender.com/
+
+The backend sleeps after 15 minutes idle and takes about a minute to wake. Open https://kindo-school-payments-backend.onrender.com/parents first and wait for it to return the parents, then use the site.
+
+To reset the data, open https://kindo-school-payments-backend.onrender.com/docs, expand `POST /demo/reset`, click **Try it out**, then **Execute**.
+
 ## What it does
 
 1. The parent picks themselves from a dropdown in the header. There is no login, so the dropdown stands in for one.
@@ -15,6 +23,8 @@ How AI was used to build this, including where it went wrong: [AI_WORKINGS.md](A
    - A network or server error shows a banner with Retry and keeps what was typed.
    - An error the backend ties to a field appears on that field.
 6. A successful payment shows a receipt: transaction ID, amount, date, child, trip and the last four card digits.
+
+No real card is charged, so do not enter real card data.
 
 ## Setup
 
@@ -40,8 +50,6 @@ You need Docker and VS Code with the Dev Containers extension. The container has
 
 5. Open http://localhost:5173 and pick a parent.
 
-If an install is rejected, the container firewall has stale addresses. Rerun `sudo /usr/local/bin/project-firewall.sh`.
-
 ### Tests and checks
 
 ```bash
@@ -54,8 +62,6 @@ npm test
 npm run lint && npx prettier --check .
 npm run build
 ```
-
-The backend tests use the same database as the app. Each test runs inside a transaction that is rolled back, so the data you see in the app is left alone. One test (`test_startup`) runs the real start-up, which is safe because the seed only adds what is missing.
 
 ### Configuration
 
@@ -87,11 +93,11 @@ To go back to the seed (no registrations, payments or added children), call the 
    curl -X POST http://localhost:8000/demo/reset
    ```
 
-Without the flag the endpoint returns 404. Do not set it on a deployed instance, because anyone who can reach the backend could wipe the data.
+Without the flag the endpoint returns 404. The endpoint has no authentication, so with the flag on, anyone who can reach the backend can wipe the data.
 
 ## How it is built
 
-**Backend** (`backend/app/`): `routers/` for the endpoints, `schemas/` for request and response models, `models/` for the tables, `services/` for the payment flow and receipt lookup, `legacy/` for the processor and its adapter, plus `db.py`, `config.py`, `errors.py` and `logging_config.py`. Schema changes go through Alembic.
+**Backend** (`backend/app/`): routers, schemas, models and a payment service, with the legacy processor behind an adapter in `legacy/`. Schema changes go through Alembic.
 
 **Frontend** (`frontend/src/`): one page in `App.tsx` with small components for each step. `api/client.ts` is the only code that calls `fetch`. Validation functions are in `validation.ts` and match the backend rules.
 
@@ -124,41 +130,24 @@ Every error has the same shape: `{ "code", "message", "field" }`. Each one is al
 
 - No login. Anyone can pick any parent. Each parent sees only their own children.
 - Currency is NZD.
-- The legacy processor is a mock. No real card is charged, and no real card data should be entered.
-- There is one school. A child added in the app goes to the lowest-numbered school.
+- One school and one trip, as the brief describes. The code supports several of each.
 - Registering and paying are separate steps. An unpaid registration stays open with no expiry.
+- No cancelling a registration, removing a child, or refunds.
 
 ## Design decisions
 
 - **Money is integer cents.** The adapter turns it into a `float` only for the legacy call, which rejects `Decimal`.
-- **The server sets the amount.** It comes from the trip. A request that includes an `amount` is rejected.
 - **No card data at rest or in logs.** Only the last four digits are stored. Card number, expiry and CVV are never logged, and validation errors do not echo them back.
 - **Payment attempts are their own table.** One registration can have many attempts, so a decline can be retried. A partial unique index allows only one `pending` or `success` attempt per registration, which blocks a double payment even when two requests arrive together.
-- **A stuck attempt recovers.** A `pending` attempt older than 60 seconds is marked `failed` the next time that registration is paid.
-- **Attempt and registration change together.** `success` and `paid` are set in one commit, so they cannot disagree.
 - **A late payment is allowed.** Registering for a past trip is rejected, but a parent can still pay for a registration they already made.
-- **The backend is the authority on validation.** The frontend repeats the same rules for fast feedback.
-- **A processor crash is treated like a decline.** The attempt is stored as `failed` and the parent sees a retryable message instead of a 500.
-- **A receipt exists only for a success.** `GET /payments/{id}` returns 404 for a failed or pending attempt.
-- **The seed adds only what is missing.** It runs on every start without duplicating rows.
 
 ## Known limits
 
-- The trip date is set once, 30 days after the first start. A database kept longer than that no longer has an upcoming trip.
+- The Zoo Trip is dated 30 days after the database is first set up, and the date never changes after that. Once it passes, the page shows no trips. Resetting the demo data creates the trip again with a new date.
 - If two payments for the same registration arrive together, the second gets "payment in progress" (409) even if the first has already finished. Nobody is charged twice.
-- If the processor approves a payment and the database commit then fails, the attempt stays `pending` and is later marked `failed` with no transaction ID. There is no reconciliation. With the mock processor this cannot be reached in practice.
-- Not deployed yet. The Render deploy is the last build step.
 
 ## Repository layout
 
 - `backend/`, `frontend/`: the app.
 - `docs/kindo-payments/`: the brief, the implementation plan and the legacy processor source.
 - `docs/progress.md`: where the build stands and the decisions made on the way.
-- `build-orchestration/`: prompt and build logs from the build sessions.
-- `.claude/` and `CLAUDE.md`: the rules, hooks and skills used with Claude Code.
-- `.devcontainer/`: the dev container and its firewall.
-- `reusables/`, `examples/`: pieces left over from the project template. Not part of any build.
-
-### Dev container notes
-
-`docker-compose.yml` mounts a volume named `claude-credentials`, so Claude Code logins are shared by projects built from the same template. The firewall allows only GitHub, `api.anthropic.com`, npm, PyPI, `api.osv.dev`, `ui.shadcn.com` and the VS Code marketplace.
