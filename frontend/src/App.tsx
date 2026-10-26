@@ -3,6 +3,7 @@ import {
   createPayment,
   createRegistration,
   createStudent,
+  getPayment,
   listActivities,
   listParents,
   listRegistrations,
@@ -19,8 +20,8 @@ import LoadError from './components/LoadError'
 import ParentSelect from './components/ParentSelect'
 import PaymentForm from './components/PaymentForm'
 import ReceiptView from './components/ReceiptView'
+import RegistrationList from './components/RegistrationList'
 import TripList from './components/TripList'
-import UnpaidRegistrations from './components/UnpaidRegistrations'
 
 interface ParentData {
   parentId: number
@@ -47,6 +48,7 @@ export default function App() {
   )
   const [payTarget, setPayTarget] = useState<Registration | null>(null)
   const [receipt, setReceipt] = useState<Receipt | null>(null)
+  const [receiptFailed, setReceiptFailed] = useState(false)
 
   const data = loaded !== null && loaded.parentId === parentId ? loaded : null
 
@@ -100,6 +102,7 @@ export default function App() {
     setRegisteringTripId(null)
     setPayTarget(null)
     setReceipt(null)
+    setReceiptFailed(false)
   }
 
   /** Opens the payment form, replacing any receipt on screen. */
@@ -127,6 +130,23 @@ export default function App() {
       )
     } catch (error) {
       console.error('Failed to refresh registrations', error)
+    }
+  }
+
+  /** Opens the receipt of a paid registration. */
+  async function viewReceipt(registration: Registration) {
+    if (registration.payment_id === null) return
+    const owner = parentIdRef.current
+    setReceiptFailed(false)
+    try {
+      const found = await getPayment(registration.payment_id)
+      // Dropped if the parent was switched while the receipt loaded.
+      if (parentIdRef.current !== owner) return
+      setPayTarget(null)
+      setReceipt(found)
+    } catch (error) {
+      console.error('Failed to load receipt', error)
+      if (parentIdRef.current === owner) setReceiptFailed(true)
     }
   }
 
@@ -209,10 +229,16 @@ export default function App() {
         {receipt !== null && (
           <ReceiptView receipt={receipt} onDone={() => setReceipt(null)} />
         )}
+        {receiptFailed && (
+          <p role="alert" className="mb-4 text-red-700">
+            Could not load the receipt. Please try again.
+          </p>
+        )}
         {data !== null && (
-          <UnpaidRegistrations
+          <RegistrationList
             registrations={data.registrations}
             onPay={openPayment}
+            onViewReceipt={(registration) => void viewReceipt(registration)}
           />
         )}
         <h2 className="mb-4 text-lg font-semibold">Upcoming trips</h2>

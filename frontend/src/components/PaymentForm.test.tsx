@@ -10,6 +10,7 @@ const registration: Registration = {
   activity_id: 1,
   status: 'registered',
   created_at: '2026-01-01T00:00:00Z',
+  payment_id: null,
   student: { id: 1, name: 'Mia Smith', school_id: 1, parent_id: 1 },
   activity: {
     id: 1,

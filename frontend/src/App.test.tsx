@@ -75,6 +75,7 @@ test('choosing a parent shows their unpaid registrations', async () => {
         activity_id: 1,
         status: 'registered',
         created_at: '2026-10-01T00:00:00Z',
+        payment_id: null,
         student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
         activity: trip,
       },
@@ -90,6 +91,81 @@ test('choosing a parent shows their unpaid registrations', async () => {
   expect(await screen.findByText('Awaiting payment')).toBeInTheDocument()
   expect(screen.getByText(/Mia Smith/)).toBeInTheDocument()
   expect(listRegistrations).toHaveBeenCalledWith(1)
+})
+
+test('View receipt on a paid registration opens its receipt', async () => {
+  vi.spyOn(client, 'listActivities').mockResolvedValue([])
+  vi.spyOn(client, 'listParents').mockResolvedValue([
+    { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+  ])
+  vi.spyOn(client, 'listStudents').mockResolvedValue([])
+  vi.spyOn(client, 'listRegistrations').mockResolvedValue([
+    {
+      id: 7,
+      student_id: 3,
+      activity_id: 1,
+      status: 'paid',
+      created_at: '2026-10-01T00:00:00Z',
+      payment_id: 5,
+      student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
+      activity: trip,
+    },
+  ])
+  const getPayment = vi.spyOn(client, 'getPayment').mockResolvedValue({
+    id: 5,
+    registration_id: 7,
+    status: 'success',
+    amount_cents: 4550,
+    legacy_transaction_id: 'TXN-123',
+    card_last4: '1111',
+    created_at: '2026-10-26T01:00:00Z',
+    student_name: 'Mia Smith',
+    activity_title: 'Zoo trip',
+    activity_date: '2026-11-05',
+  })
+  render(<App />)
+
+  await screen.findByRole('option', { name: 'Aroha Smith' })
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Aroha Smith')
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'View receipt' }),
+  )
+
+  expect(await screen.findByText('TXN-123')).toBeInTheDocument()
+  expect(getPayment).toHaveBeenCalledWith(5)
+})
+
+test('a receipt that fails to load shows an error', async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+  vi.spyOn(client, 'listActivities').mockResolvedValue([])
+  vi.spyOn(client, 'listParents').mockResolvedValue([
+    { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+  ])
+  vi.spyOn(client, 'listStudents').mockResolvedValue([])
+  vi.spyOn(client, 'listRegistrations').mockResolvedValue([
+    {
+      id: 7,
+      student_id: 3,
+      activity_id: 1,
+      status: 'paid',
+      created_at: '2026-10-01T00:00:00Z',
+      payment_id: 5,
+      student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
+      activity: trip,
+    },
+  ])
+  vi.spyOn(client, 'getPayment').mockRejectedValue(new Error('offline'))
+  render(<App />)
+
+  await screen.findByRole('option', { name: 'Aroha Smith' })
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Aroha Smith')
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'View receipt' }),
+  )
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Could not load the receipt',
+  )
 })
 
 test('registering a child for a trip calls the API and closes the picker', async () => {
@@ -109,6 +185,7 @@ test('registering a child for a trip calls the API and closes the picker', async
         activity_id: 1,
         status: 'registered',
         created_at: '2026-10-01T00:00:00Z',
+        payment_id: null,
         student: mia,
         activity: trip,
       },
@@ -155,6 +232,7 @@ test('the Pay button opens the payment form and Cancel closes it', async () => {
       activity_id: 1,
       status: 'registered',
       created_at: '2026-10-01T00:00:00Z',
+      payment_id: null,
       student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
       activity: trip,
     },
@@ -179,6 +257,7 @@ test('paying shows the receipt and drops the registration from the unpaid list',
     activity_id: 1,
     status: 'registered',
     created_at: '2026-10-01T00:00:00Z',
+    payment_id: null,
     student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
     activity: trip,
   }
@@ -241,6 +320,7 @@ test('switching parent closes an open payment form', async () => {
             activity_id: 1,
             status: 'registered',
             created_at: '2026-10-01T00:00:00Z',
+            payment_id: null,
             student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
             activity: trip,
           },
@@ -272,6 +352,7 @@ test('a declined payment keeps the form open with the processor message', async 
       activity_id: 1,
       status: 'registered',
       created_at: '2026-10-01T00:00:00Z',
+      payment_id: null,
       student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
       activity: trip,
     },
@@ -313,6 +394,7 @@ test('a child registered for one trip can still be picked for another', async ()
       activity_id: 1,
       status: 'registered',
       created_at: '2026-10-01T00:00:00Z',
+      payment_id: null,
       student: mia,
       activity: trip,
     },
@@ -340,6 +422,7 @@ test('opening a payment form closes the receipt on screen', async () => {
     activity_id: 1,
     status: 'registered',
     created_at: '2026-10-01T00:00:00Z',
+    payment_id: null,
     student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
     activity: trip,
   })
@@ -392,6 +475,7 @@ test('a receipt is not shown under another parent after a switch mid-payment', a
     activity_id: 1,
     status: 'registered',
     created_at: '2026-10-01T00:00:00Z',
+    payment_id: null,
     student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
     activity: trip,
   }
@@ -479,6 +563,7 @@ test("a failed load of a parent's data shows an alert and Try again reloads it",
         activity_id: 1,
         status: 'registered',
         created_at: '2026-10-01T00:00:00Z',
+        payment_id: null,
         student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
         activity: trip,
       },
