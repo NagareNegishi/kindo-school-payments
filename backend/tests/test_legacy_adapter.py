@@ -1,6 +1,8 @@
 from dataclasses import replace
 from unittest.mock import patch
 
+import pytest
+
 from app.legacy.adapter import ChargeRequest, build_payload, charge
 
 REQ = ChargeRequest(
@@ -24,6 +26,24 @@ def test_payload_field_types():
     assert payload["activity_id"] == "7"
     for field in ("student_name", "parent_name", "expiry_date", "cvv"):
         assert type(payload[field]) is str
+
+
+def test_payload_has_exactly_the_processor_fields():
+    assert set(build_payload(REQ)) == {
+        "student_name",
+        "parent_name",
+        "amount",
+        "card_number",
+        "expiry_date",
+        "cvv",
+        "school_id",
+        "activity_id",
+    }
+
+
+@pytest.mark.parametrize(("cents", "amount"), [(4550, 45.5), (1999, 19.99), (5, 0.05), (100, 1.0)])
+def test_amount_is_cents_divided_by_100(cents, amount):
+    assert build_payload(replace(REQ, cost_cents=cents))["amount"] == amount
 
 
 async def test_charge_success():

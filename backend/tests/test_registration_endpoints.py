@@ -70,6 +70,18 @@ async def test_registration_for_past_activity_409(client, session):
     assert res.json()["code"] == "activity_past"
 
 
+async def test_registration_for_an_activity_today_is_accepted(client, session):
+    school = await session.scalar(select(School))
+    today = Activity(school_id=school.id, title="Today", date=dt.date.today(), cost_cents=1000)
+    session.add(today)
+    await session.flush()
+    body = {"student_id": await _student_id(session, "Mia Smith"), "activity_id": today.id}
+
+    res = await client.post("/registrations", json=body)
+
+    assert res.status_code == 201
+
+
 async def test_registration_unknown_ids_404(client, session):
     student = await _student_id(session, "Mia Smith")
     trip = await _trip_id(session)
