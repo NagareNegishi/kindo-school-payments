@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
+  createPayment,
   createRegistration,
   createStudent,
   listActivities,
@@ -7,13 +8,16 @@ import {
   listRegistrations,
   listStudents,
   type Activity,
+  type CardInput,
   type Parent,
+  type Receipt,
   type Registration,
   type Student,
 } from './api/client'
 import ChildPicker from './components/ChildPicker'
 import ParentSelect from './components/ParentSelect'
 import PaymentForm from './components/PaymentForm'
+import ReceiptView from './components/ReceiptView'
 import TripList from './components/TripList'
 import UnpaidRegistrations from './components/UnpaidRegistrations'
 
@@ -34,6 +38,7 @@ export default function App() {
     null,
   )
   const [payTarget, setPayTarget] = useState<Registration | null>(null)
+  const [receipt, setReceipt] = useState<Receipt | null>(null)
 
   const data = loaded !== null && loaded.parentId === parentId ? loaded : null
 
@@ -73,6 +78,26 @@ export default function App() {
     setParentId(id)
     setRegisteringTripId(null)
     setPayTarget(null)
+    setReceipt(null)
+  }
+
+  /** Pays the open registration. Rejects on failure so the form can show it. */
+  async function pay(card: CardInput) {
+    if (payTarget === null || data === null) return
+    const paid = await createPayment(payTarget.id, card)
+    setReceipt(paid)
+    setPayTarget(null)
+    // The payment went through; a failed refresh must not read as a payment error.
+    try {
+      const registrations = await listRegistrations(data.parentId)
+      setLoaded((prev) =>
+        prev !== null && prev.parentId === data.parentId
+          ? { ...prev, registrations }
+          : prev,
+      )
+    } catch (error) {
+      console.error('Failed to refresh registrations', error)
+    }
   }
 
   async function addChild(name: string) {
@@ -135,10 +160,12 @@ export default function App() {
             // Remount per registration so typed card details never carry over.
             key={payTarget.id}
             registration={payTarget}
-            // The payment call is wired in step 8.
-            onSubmit={() => {}}
+            onSubmit={pay}
             onCancel={() => setPayTarget(null)}
           />
+        )}
+        {receipt !== null && (
+          <ReceiptView receipt={receipt} onDone={() => setReceipt(null)} />
         )}
         {data !== null && (
           <UnpaidRegistrations

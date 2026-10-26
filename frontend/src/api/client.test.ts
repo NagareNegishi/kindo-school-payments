@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import { ApiError, listActivities } from './client'
+import { ApiError, createPayment, listActivities } from './client'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -22,6 +22,34 @@ test('listActivities returns the parsed list from /activities', async () => {
 
   await expect(listActivities()).resolves.toEqual(activities)
   expect(fetchMock.mock.calls[0][0]).toMatch(/\/activities$/)
+})
+
+test('createPayment posts only the card details to the registration', async () => {
+  const fetchMock = stubFetch(201, { id: 5 })
+  const card = {
+    card_number: '4111 1111 1111 1111',
+    expiry_date: '12/99',
+    cvv: '123',
+  }
+
+  await createPayment(7, card)
+
+  const [url, init] = fetchMock.mock.calls[0]
+  expect(url).toMatch(/\/registrations\/7\/payments$/)
+  expect(init.method).toBe('POST')
+  expect(JSON.parse(init.body)).toEqual(card)
+})
+
+test('a declined payment rejects with status 402 and the processor message', async () => {
+  stubFetch(402, {
+    code: 'payment_declined',
+    message: 'Card declined.',
+    field: null,
+  })
+
+  await expect(
+    createPayment(7, { card_number: '', expiry_date: '', cvv: '' }),
+  ).rejects.toMatchObject({ status: 402, message: 'Card declined.' })
 })
 
 test('a non-2xx response throws an ApiError with the shared error shape', async () => {

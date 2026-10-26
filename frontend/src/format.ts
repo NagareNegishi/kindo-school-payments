@@ -12,6 +12,17 @@ const longDate = new Intl.DateTimeFormat('en-NZ', {
   year: 'numeric',
 })
 
+const shortDate = new Intl.DateTimeFormat('en-NZ', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+})
+
+/** Formats an ISO timestamp as a date in the viewer's timezone. */
+export function formatTimestamp(timestamp: string): string {
+  return shortDate.format(new Date(timestamp))
+}
+
 export function formatCost(cents: number): string {
   return nzd.format(cents / 100)
 }

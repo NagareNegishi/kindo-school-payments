@@ -172,6 +172,59 @@ test('the Pay button opens the payment form and Cancel closes it', async () => {
   expect(screen.queryByLabelText('Card number')).not.toBeInTheDocument()
 })
 
+test('paying shows the receipt and drops the registration from the unpaid list', async () => {
+  const registration: client.Registration = {
+    id: 7,
+    student_id: 3,
+    activity_id: 1,
+    status: 'registered',
+    created_at: '2026-10-01T00:00:00Z',
+    student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
+    activity: trip,
+  }
+  vi.spyOn(client, 'listActivities').mockResolvedValue([])
+  vi.spyOn(client, 'listParents').mockResolvedValue([
+    { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+  ])
+  vi.spyOn(client, 'listStudents').mockResolvedValue([])
+  vi.spyOn(client, 'listRegistrations')
+    .mockResolvedValueOnce([registration])
+    .mockResolvedValueOnce([])
+  const createPayment = vi.spyOn(client, 'createPayment').mockResolvedValue({
+    id: 5,
+    registration_id: 7,
+    status: 'success',
+    amount_cents: 4550,
+    legacy_transaction_id: 'TXN-123',
+    card_last4: '1111',
+    created_at: '2026-10-26T01:00:00Z',
+    student_name: 'Mia Smith',
+    activity_title: 'Zoo trip',
+    activity_date: '2026-11-05',
+  })
+  render(<App />)
+
+  await screen.findByRole('option', { name: 'Aroha Smith' })
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Aroha Smith')
+  await userEvent.click(await screen.findByRole('button', { name: 'Pay' }))
+  await userEvent.type(
+    screen.getByLabelText('Card number'),
+    '4111 1111 1111 1111',
+  )
+  await userEvent.type(screen.getByLabelText('Expiry (MM/YY)'), '12/99')
+  await userEvent.type(screen.getByLabelText('CVV'), '123')
+  await userEvent.click(screen.getByRole('button', { name: /^Pay \$/ }))
+
+  expect(await screen.findByText('TXN-123')).toBeInTheDocument()
+  expect(createPayment).toHaveBeenCalledWith(7, {
+    card_number: '4111 1111 1111 1111',
+    expiry_date: '12/99',
+    cvv: '123',
+  })
+  expect(screen.queryByLabelText('Card number')).not.toBeInTheDocument()
+  expect(screen.queryByText('Awaiting payment')).not.toBeInTheDocument()
+})
+
 test('shows an error and logs it when loading fails', async () => {
   const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
   vi.spyOn(client, 'listActivities').mockRejectedValue(new Error('down'))

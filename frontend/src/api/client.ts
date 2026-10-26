@@ -40,6 +40,27 @@ export interface Registration extends RegistrationBasic {
   activity: Activity
 }
 
+/** A finished payment: the data the receipt shows. */
+export interface Receipt {
+  id: number
+  registration_id: number
+  status: string
+  amount_cents: number
+  legacy_transaction_id: string | null
+  card_last4: string
+  created_at: string
+  student_name: string
+  activity_title: string
+  activity_date: string
+}
+
+/** Card details as typed; the amount is never sent, the server takes it from the trip. */
+export interface CardInput {
+  card_number: string
+  expiry_date: string
+  cvv: string
+}
+
 /** The backend's shared error shape: `{ code, message, field }`. */
 export class ApiError extends Error {
   readonly status: number
@@ -108,6 +129,17 @@ export function createRegistration(
   return request<RegistrationBasic>(
     '/registrations',
     jsonPost({ student_id: studentId, activity_id: activityId }),
+  )
+}
+
+/** Pays for a registration. A decline rejects with an ApiError of status 402. */
+export function createPayment(
+  registrationId: number,
+  card: CardInput,
+): Promise<Receipt> {
+  return request<Receipt>(
+    `/registrations/${registrationId}/payments`,
+    jsonPost(card),
   )
 }
 
