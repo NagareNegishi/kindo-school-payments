@@ -3,9 +3,10 @@ import logging
 from contextlib import contextmanager
 from unittest.mock import patch
 
+import pytest
 from sqlalchemy import select
 
-from app.models import Activity, Registration, School, Student
+from app.models import Activity, PaymentAttempt, Registration, School, Student
 
 CARD = {"card_number": "4111 1111 1111 1111", "expiry_date": "12/40", "cvv": "123"}
 
@@ -158,6 +159,21 @@ async def test_get_missing_payment_404(client):
         "message": "Payment not found.",
         "field": "payment_id",
     }
+
+
+@pytest.mark.parametrize("status", ["pending", "failed"])
+async def test_get_unsuccessful_payment_404(client, session, status):
+    registration = await _registration(session)
+    attempt = PaymentAttempt(
+        registration_id=registration.id, amount_cents=4500, status=status, card_last4="1111"
+    )
+    session.add(attempt)
+    await session.flush()
+
+    res = await client.get(f"/payments/{attempt.id}")
+
+    assert res.status_code == 404
+    assert res.json()["code"] == "payment_not_found"
 
 
 async def test_errors_and_attempts_are_logged_without_card_data(client, session, caplog):

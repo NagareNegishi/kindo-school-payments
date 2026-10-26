@@ -8,14 +8,14 @@ from app.schemas.receipt import AttemptOut, ReceiptOut
 
 
 async def load_receipt(session: AsyncSession, attempt_id: int) -> ReceiptOut | None:
-    """Return the receipt data for one attempt, or None if it does not exist."""
+    """Return the receipt data for one successful attempt, or None if there is none."""
     row = (
         await session.execute(
             select(PaymentAttempt, Student, Activity)
             .join(Registration, PaymentAttempt.registration_id == Registration.id)
             .join(Student, Registration.student_id == Student.id)
             .join(Activity, Registration.activity_id == Activity.id)
-            .where(PaymentAttempt.id == attempt_id)
+            .where(PaymentAttempt.id == attempt_id, PaymentAttempt.status == "success")
         )
     ).first()
     if row is None:
