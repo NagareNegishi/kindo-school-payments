@@ -64,10 +64,30 @@ The backend tests use the same database as the app. Each test runs inside a tran
 | `DATABASE_URL` | backend | none; the backend will not start without it. A plain `postgresql://` URL is converted to the asyncpg form. |
 | `FRONTEND_ORIGIN` | backend (CORS) | `http://localhost:5173` |
 | `VITE_API_URL` | frontend, read at build time | `http://localhost:8000` |
+| `DEMO_RESET_ENABLED` | backend; turns on `POST /demo/reset` | off |
 
 ### Seed data
 
 On start the backend adds, only if missing: one school, one trip ("Zoo Trip", $45.00, Auckland Zoo, dated 30 days after the first start), and three parents. Aroha Smith has two children (Mia, Liam), Tom Wilson has one (Ella), and Priya Patel has none.
+
+### Reset the demo data
+
+To go back to the seed (no registrations, payments or added children), call the reset endpoint. It is off by default, so enable it for local use first.
+
+1. Start the backend with the flag set:
+
+   ```bash
+   cd backend
+   DEMO_RESET_ENABLED=true uv run fastapi dev
+   ```
+
+2. Call the endpoint. It returns 204 and the app is back to the seed.
+
+   ```bash
+   curl -X POST http://localhost:8000/demo/reset
+   ```
+
+Without the flag the endpoint returns 404. Do not set it on a deployed instance, because anyone who can reach the backend could wipe the data.
 
 ## How it is built
 
@@ -87,6 +107,7 @@ On start the backend adds, only if missing: one school, one trip ("Zoo Trip", $4
 | POST | `/registrations` | register a child. 409 if already registered or the trip is past |
 | POST | `/registrations/{id}/payments` | pay. 201 paid, 402 declined, 409 already paid or in progress, 422 invalid |
 | GET | `/payments/{id}` | receipt for a successful payment, 404 otherwise |
+| POST | `/demo/reset` | back to the seed, 204. 404 unless `DEMO_RESET_ENABLED` is set |
 
 Every error has the same shape: `{ "code", "message", "field" }`. Each one is also logged to stdout.
 
