@@ -11,7 +11,7 @@ lowest: 🤖 ai-audited
 | 1 | done | #1 |
 | 2 | done | #2 |
 | 3 | done | #2 |
-| 4 | planned | #2 |
+| 4 | done | #2 |
 | 5 | planned | #2 |
 | 6 | planned | #3 |
 | 7 | planned | #3 |
@@ -64,11 +64,11 @@ Backend first, then frontend, then docs and deploy, in the order of the Implemen
 ### Step 4: Add validation schemas and error handling
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
 
-- [ ] Schemas for child name: required, trimmed, 1-100 chars.
-- [ ] Schemas for card number (16 digits after removing spaces), expiry (`MM/YY`, month 01-12, not before the current month) and CVV (exactly 3 digits).
-- [ ] Never take the amount from the client.
-- [ ] Exception handlers for validation errors, `HTTPException` and unhandled exceptions, each returning `{ code, message, field }` and logging the error.
-- [ ] Tests: each rule rejects bad input with the right field error; every error type returns the shared shape.
+- [x] Schemas for child name: required, trimmed, 1-100 chars.
+- [x] Schemas for card number (16 digits after removing spaces), expiry (`MM/YY`, month 01-12, not before the current month) and CVV (exactly 3 digits).
+- [x] Never take the amount from the client.
+- [x] Exception handlers for validation errors, `HTTPException` and unhandled exceptions, each returning `{ code, message, field }` and logging the error.
+- [x] Tests: each rule rejects bad input with the right field error; every error type returns the shared shape.
 
 ### Step 5: Add endpoints, payment service and logging
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
