@@ -10,7 +10,7 @@ lowest: 🤖 ai-audited
 |---|---|---|
 | 1 | done | #1 |
 | 2 | done | #2 |
-| 3 | planned | #2 |
+| 3 | done | #2 |
 | 4 | planned | #2 |
 | 5 | planned | #2 |
 | 6 | planned | #3 |
@@ -56,10 +56,10 @@ Backend first, then frontend, then docs and deploy, in the order of the Implemen
 ### Step 3: Add the legacy processor and adapter
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (not checked)
 
-- [ ] Include `LegacyPaymentProcessor` unchanged in its own module under `legacy/`.
-- [ ] Adapter maps each field to the type the processor expects: `amount` as float from `cost_cents / 100`, card number as 16 digits with spaces stripped, `school_id` and `activity_id` as strings.
-- [ ] Callers use `run_in_threadpool`, because the processor blocks for 1.5 s.
-- [ ] Tests patch `random` and `time.sleep`; the adapter test checks every field type.
+- [x] Include `LegacyPaymentProcessor` unchanged in its own module under `legacy/`.
+- [x] Adapter maps each field to the type the processor expects: `amount` as float from `cost_cents / 100`, card number as 16 digits with spaces stripped, `school_id` and `activity_id` as strings.
+- [x] Callers use `run_in_threadpool`, because the processor blocks for 1.5 s.
+- [x] Tests patch `random` and `time.sleep`; the adapter test checks every field type.
 
 ### Step 4: Add validation schemas and error handling
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
