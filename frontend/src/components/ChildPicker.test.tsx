@@ -48,7 +48,7 @@ test('shows a hint when the parent has no children', () => {
 
 test('an empty name shows an error on blur and on submit, and is not sent', async () => {
   const { onAdd } = setup()
-  const input = screen.getByLabelText('Add a child')
+  const input = screen.getByLabelText('Add a new child')
 
   await userEvent.click(input)
   await userEvent.tab()
@@ -60,7 +60,7 @@ test('an empty name shows an error on blur and on submit, and is not sent', asyn
 
 test('adds a trimmed name, registers the new child and clears the field', async () => {
   const { onAdd, onSelect } = setup()
-  const input = screen.getByLabelText('Add a child')
+  const input = screen.getByLabelText('Add a new child')
 
   await userEvent.type(input, '  Ava Smith  ')
   await userEvent.click(screen.getByRole('button', { name: 'Register' }))
@@ -77,7 +77,7 @@ test('a failed registration of a new child shows a banner and keeps them added',
       new ApiError(500, 'server_error', 'Could not register.', null),
     )
   const { onAdd } = setup({ onSelect })
-  const input = screen.getByLabelText('Add a child')
+  const input = screen.getByLabelText('Add a new child')
 
   await userEvent.type(input, 'Ava Smith')
   await userEvent.click(screen.getByRole('button', { name: 'Register' }))
@@ -101,7 +101,7 @@ test('a backend name error shows under the name field and keeps the input', asyn
       ),
     )
   setup({ onAdd })
-  const input = screen.getByLabelText('Add a child')
+  const input = screen.getByLabelText('Add a new child')
 
   await userEvent.type(input, 'Mia Smith')
   await userEvent.click(screen.getByRole('button', { name: 'Register' }))

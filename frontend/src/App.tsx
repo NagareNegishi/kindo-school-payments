@@ -14,12 +14,15 @@ import {
   type Registration,
   type Student,
 } from './api/client'
+import Alert from './components/Alert'
+import Button from './components/Button'
 import ChildPicker from './components/ChildPicker'
 import LoadError from './components/LoadError'
 import ParentSelect from './components/ParentSelect'
 import PaymentForm from './components/PaymentForm'
 import ReceiptView from './components/ReceiptView'
 import RegistrationList from './components/RegistrationList'
+import Spinner from './components/Spinner'
 import TripList from './components/TripList'
 import { useLoad } from './useLoad'
 import { useScrollIntoView } from './useScrollIntoView'
@@ -156,13 +159,13 @@ export default function App() {
     if (data === null) return null
     if (registeringTripId !== trip.id) {
       return (
-        <button
-          type="button"
-          className="mt-4 w-full rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 sm:w-auto"
+        <Button
+          variant="primary"
+          className="mt-4"
           onClick={() => setRegisteringTripId(trip.id)}
         >
           Register a child
-        </button>
+        </Button>
       )
     }
     const registeredIds = new Set(
@@ -221,9 +224,9 @@ export default function App() {
           )}
         </div>
         {receiptFailed && (
-          <p role="alert" className="mb-4 text-red-700">
+          <Alert className="mb-4">
             Could not load the receipt. Please try again.
-          </p>
+          </Alert>
         )}
         {data !== null && (
           <RegistrationList
@@ -234,11 +237,12 @@ export default function App() {
         )}
         <h2 className="mb-4 text-lg font-semibold">Upcoming trips</h2>
         {failed ? (
-          <p role="alert" className="text-red-700">
-            Could not load trips. Please refresh and try again.
-          </p>
+          <Alert>Could not load trips. Please refresh and try again.</Alert>
         ) : trips === null ? (
-          <p className="text-gray-600">Loading trips...</p>
+          <p className="flex items-center gap-2 text-gray-600">
+            <Spinner />
+            <span>Loading trips...</span>
+          </p>
         ) : (
           <TripList trips={trips} renderExtra={renderTripExtra} />
         )}

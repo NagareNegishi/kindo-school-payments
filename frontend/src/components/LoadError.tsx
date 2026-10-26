@@ -1,3 +1,6 @@
+import Alert from './Alert'
+import Button from './Button'
+
 interface Props {
   message: string
   onRetry: () => void
@@ -6,18 +9,11 @@ interface Props {
 /** Alert for a failed load, with a button to try the load again. */
 export default function LoadError({ message, onRetry }: Props) {
   return (
-    <div
-      role="alert"
-      className="mb-4 flex flex-col gap-2 rounded border border-red-200 bg-red-50 p-3 text-red-800 sm:flex-row sm:items-center sm:justify-between"
-    >
+    <Alert className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <p>{message}</p>
-      <button
-        type="button"
-        className="rounded border border-red-300 px-3 py-1 font-medium"
-        onClick={onRetry}
-      >
+      <Button size="sm" onClick={onRetry}>
         Try again
-      </button>
-    </div>
+      </Button>
+    </Alert>
   )
 }
