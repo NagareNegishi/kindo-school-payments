@@ -13,7 +13,7 @@ lowest: 🤖 ai-audited
 | 3 | done | #2 |
 | 4 | done | #2 |
 | 5 | done | #2 |
-| 6 | planned | #3 |
+| 6 | done | #3 |
 | 7 | planned | #3 |
 | 8 | planned | #3 |
 | 9 | planned | #4 |
@@ -85,11 +85,11 @@ Backend first, then frontend, then docs and deploy, in the order of the Implemen
 ### Step 6: Add the API client and trip card
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
 
-- [ ] Mobile-first layout with `sm:`/`md:` breakpoints.
-- [ ] Read `VITE_API_URL` at build time.
-- [ ] One API client module for all calls.
-- [ ] Trip list of upcoming trips (title, date, location, cost, description).
-- [ ] Empty state when there are no trips.
+- [x] Mobile-first layout with `sm:`/`md:` breakpoints.
+- [x] Read `VITE_API_URL` at build time.
+- [x] One API client module for all calls.
+- [x] Trip list of upcoming trips (title, date, location, cost, description).
+- [x] Empty state when there are no trips.
 
 ### Step 7: Add parent dropdown, child picker and payment form
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
