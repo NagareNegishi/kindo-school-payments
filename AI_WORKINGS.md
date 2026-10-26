@@ -9,6 +9,7 @@
    - **Planning:** after the dev container was rebuilt, I used project-seed's planning skill to turn the plan into a detailed implementation plan with defined steps.
    - **Building:** one step at a time in manual mode. It wrote the code, and I reviewed it and fixed things or gave direction.
    - **Polish and docs:** once the must haves were covered, I polished the frontend UI through chat. It wrote the documentation from my input to track project state. Auto mode was used for this part.
+4. **Claude Code (Sonnet 5.5, medium effort) in a local copy of the repo**, as an experiment. After the initial setup I made a copy and ran the `build-orchestration` skill on it. I gave it the starting instructions and did not review its work. The skill makes the agents write black-box tests first and white-box tests later, and I hoped that would produce more test cases. Once my own reviewed implementation was done, I had Claude compare the two and pull the good test cases into this repo.
 
 
 ## Key prompts
@@ -27,7 +28,7 @@ Prompts I use often are saved as skills (in `.claude/skills/`). These are the on
 
 All in the repository:
 
-- `CLAUDE.md`: project rules. Read the brief and plan first, no git writes, never store a full card number, expiry or CVV, ask when a requirement is unclear, no features outside the plan.
+- `CLAUDE.md`: project rules. Read the plan first, no features outside the plan, commit after each working step, never store a full card number, expiry or CVV.
 - `.claude/settings.json`: permissions and hook wiring.
 - `.claude/hooks/`: guards that blocked the AI from reading or writing `.env` files, running throwaway probe scripts, adding itself as a commit co-author, and writing to git.
 - `.claude/rules/backend.md` and `.claude/rules/frontend.md`: rules per area (adapter only, `run_in_threadpool`, one error shape, mobile-first, mirror backend validation).
@@ -42,4 +43,7 @@ Claude also wrote duplicated code and re-implemented the same logic in several p
 
 ## What I wrote, rewrote or rejected
 
-I wrote no code myself. I rejected output and directed fixes.
+I wrote no code myself. I rejected output and directed fixes. Two examples:
+
+- **Long functions:** Claude from time to time put the whole flow in one long function, for example in `backend/app/services/payment.py`. I rejected that and had it split the function into smaller helpers, so each step can be read and tested on its own.
+- **One file for all models:** Claude put every model in one file, `backend/app/models/base.py`. I rejected that and had it separate them into one file per model (`parent.py`, `student.py`, `registration.py` and so on), with `base.py` holding only the shared base.
