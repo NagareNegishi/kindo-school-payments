@@ -14,7 +14,7 @@ from app.config import settings
 from app.db import SessionLocal, engine
 from app.errors import register_exception_handlers
 from app.logging_config import configure_logging
-from app.routers import activities, parents, payments, registrations
+from app.routers import activities, demo, parents, payments, registrations
 from app.seed import seed
 
 ALEMBIC_INI = Path(__file__).resolve().parent.parent / "alembic.ini"
@@ -40,6 +40,7 @@ configure_logging()
 app = FastAPI(lifespan=lifespan)
 register_exception_handlers(app)
 app.include_router(activities.router)
+app.include_router(demo.router)
 app.include_router(parents.router)
 app.include_router(payments.router)
 app.include_router(registrations.router)
