@@ -1,28 +1,23 @@
 """Parent read endpoints."""
 
-from typing import Annotated
-
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db import get_session
+from app.db import Session, get_or_404
 from app.errors import api_error
 from app.models import Activity, Parent, Registration, School, Student
 from app.schemas.read import ActivityOut, ParentOut, StudentOut
-from app.schemas.registration import RegistrationDetail
+from app.schemas.registration import RegistrationDetail, RegistrationOut
 from app.schemas.student import StudentCreate
 
 router = APIRouter(prefix="/parents", tags=["parents"])
 
-Session = Annotated[AsyncSession, Depends(get_session)]
-
 
 async def _get_parent(session: AsyncSession, parent_id: int) -> Parent:
-    parent = await session.get(Parent, parent_id)
-    if parent is None:
-        raise api_error(404, "parent_not_found", "Parent not found.", "parent_id")
-    return parent
+    return await get_or_404(
+        session, Parent, parent_id, "parent_not_found", "Parent not found.", "parent_id"
+    )
 
 
 @router.get("", response_model=list[ParentOut])
@@ -55,11 +50,7 @@ async def list_registrations(parent_id: int, session: Session):
     )
     return [
         RegistrationDetail(
-            id=reg.id,
-            student_id=reg.student_id,
-            activity_id=reg.activity_id,
-            status=reg.status,
-            created_at=reg.created_at,
+            **RegistrationOut.model_validate(reg).model_dump(),
             student=StudentOut.model_validate(student),
             activity=ActivityOut.model_validate(activity),
         )

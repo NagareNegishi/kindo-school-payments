@@ -1,13 +1,11 @@
 """Registration endpoints."""
 
 import datetime as dt
-from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db import get_session
+from app.db import Session, get_or_404
 from app.errors import api_error
 from app.models import Activity, Registration, Student
 from app.schemas.payment import PaymentCreate
@@ -18,17 +16,21 @@ from app.services.receipt import load_receipt
 
 router = APIRouter(prefix="/registrations", tags=["registrations"])
 
-Session = Annotated[AsyncSession, Depends(get_session)]
-
 
 @router.post("", response_model=RegistrationOut, status_code=201)
 async def create_registration(body: RegistrationCreate, session: Session):
     """Register a child for an upcoming activity."""
-    if await session.get(Student, body.student_id) is None:
-        raise api_error(404, "student_not_found", "Child not found.", "student_id")
-    activity = await session.get(Activity, body.activity_id)
-    if activity is None:
-        raise api_error(404, "activity_not_found", "Activity not found.", "activity_id")
+    await get_or_404(
+        session, Student, body.student_id, "student_not_found", "Child not found.", "student_id"
+    )
+    activity = await get_or_404(
+        session,
+        Activity,
+        body.activity_id,
+        "activity_not_found",
+        "Activity not found.",
+        "activity_id",
+    )
     if activity.date < dt.date.today():
         raise api_error(409, "activity_past", "This trip has already happened.", "activity_id")
     existing = await session.scalar(

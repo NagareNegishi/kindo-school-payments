@@ -1,20 +1,15 @@
 """Activity read endpoints."""
 
 import datetime as dt
-from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db import get_session
-from app.errors import api_error
+from app.db import Session, get_or_404
 from app.models import Activity
 from app.schemas.read import ActivityOut
 
 router = APIRouter(prefix="/activities", tags=["activities"])
-
-Session = Annotated[AsyncSession, Depends(get_session)]
 
 
 @router.get("", response_model=list[ActivityOut])
@@ -30,7 +25,6 @@ async def list_activities(session: Session):
 
 @router.get("/{activity_id}", response_model=ActivityOut)
 async def get_activity(activity_id: int, session: Session):
-    activity = await session.get(Activity, activity_id)
-    if activity is None:
-        raise api_error(404, "activity_not_found", "Activity not found.", "activity_id")
-    return activity
+    return await get_or_404(
+        session, Activity, activity_id, "activity_not_found", "Activity not found.", "activity_id"
+    )

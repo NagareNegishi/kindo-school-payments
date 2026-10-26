@@ -1,18 +1,13 @@
 """Receipt endpoint."""
 
-from typing import Annotated
+from fastapi import APIRouter
 
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.db import get_session
+from app.db import Session
 from app.errors import api_error
 from app.schemas.receipt import ReceiptOut
 from app.services.receipt import load_receipt
 
 router = APIRouter(prefix="/payments", tags=["payments"])
-
-Session = Annotated[AsyncSession, Depends(get_session)]
 
 
 @router.get("/{payment_id}", response_model=ReceiptOut)

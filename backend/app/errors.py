@@ -11,13 +11,13 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 logger = logging.getLogger(__name__)
 
 
-def api_error(status_code: int, code: str, message: str, field: str | None = None) -> HTTPException:
-    """Build an HTTPException that the handler below renders in the shared shape."""
-    return HTTPException(status_code, detail={"code": code, "message": message, "field": field})
-
-
 def error_body(code: str, message: str, field: str | None = None) -> dict:
     return {"code": code, "message": message, "field": field}
+
+
+def api_error(status_code: int, code: str, message: str, field: str | None = None) -> HTTPException:
+    """Build an HTTPException that the handler below renders in the shared shape."""
+    return HTTPException(status_code, detail=error_body(code, message, field))
 
 
 async def handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
