@@ -9,7 +9,7 @@ lowest: 🤖 ai-audited
 | Step | State | Note |
 |---|---|---|
 | 1 | done | #1 |
-| 2 | planned | #2 |
+| 2 | done | #2 |
 | 3 | planned | #2 |
 | 4 | planned | #2 |
 | 5 | planned | #2 |
@@ -45,13 +45,13 @@ Backend first, then frontend, then docs and deploy, in the order of the Implemen
 ### Step 2: Add config, models, migration and seed
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
 
-- [ ] `config.py`: read `DATABASE_URL`, convert `postgresql://` to `postgresql+asyncpg://`, set the frontend origin for CORS.
-- [ ] `db.py`: async engine and session.
-- [ ] `models/`: the six tables with integer-cent money, unique constraints, and the partial unique index on `payment_attempt`.
-- [ ] One Alembic migration for the schema.
-- [ ] Seed: one school, one trip, three parents (two children, one child, none), inserting only missing rows.
-- [ ] Run migrations and the seed on backend start.
-- [ ] Test: seed run twice adds no duplicate rows.
+- [x] `config.py`: read `DATABASE_URL`, convert `postgresql://` to `postgresql+asyncpg://`, set the frontend origin for CORS.
+- [x] `db.py`: async engine and session.
+- [x] `models/`: the six tables with integer-cent money, unique constraints, and the partial unique index on `payment_attempt`.
+- [x] One Alembic migration for the schema.
+- [x] Seed: one school, one trip, three parents (two children, one child, none), inserting only missing rows.
+- [x] Run migrations and the seed on backend start.
+- [x] Test: seed run twice adds no duplicate rows.
 
 ### Step 3: Add the legacy processor and adapter
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (not checked)
