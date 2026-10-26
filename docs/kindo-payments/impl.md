@@ -14,7 +14,7 @@ lowest: 🤖 ai-audited
 | 4 | done | #2 |
 | 5 | done | #2 |
 | 6 | done | #3 |
-| 7 | planned | #3 |
+| 7 | done | #3 |
 | 8 | planned | #3 |
 | 9 | planned | #4 |
 | 10 | planned | #5 |
@@ -94,11 +94,11 @@ Backend first, then frontend, then docs and deploy, in the order of the Implemen
 ### Step 7: Add parent dropdown, child picker and payment form
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
 
-- [ ] Header parent dropdown.
-- [ ] The selected parent's unpaid registrations above the trip list (past trips included), each with a Pay button.
-- [ ] Child picker with an add-child form; children already registered for the trip are marked and not selectable.
-- [ ] Validation functions for each field, matching the backend rules. Tests for each.
-- [ ] Payment form: card number, expiry, CVV; the amount shown and not editable; inline errors on blur and on submit.
+- [x] Header parent dropdown.
+- [x] The selected parent's unpaid registrations above the trip list (past trips included), each with a Pay button.
+- [x] Child picker with an add-child form; children already registered for the trip are marked and not selectable.
+- [x] Validation functions for each field, matching the backend rules. Tests for each.
+- [x] Payment form: card number, expiry, CVV; the amount shown and not editable; inline errors on blur and on submit.
 
 ### Step 8: Add loading, error banners, retry and receipt
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
