@@ -282,6 +282,61 @@ test('a receipt is not shown under another parent after a switch mid-payment', a
   expect(screen.queryByText('TXN-123')).not.toBeInTheDocument()
 })
 
+test('a failed parents load shows an alert and Try again reloads them', async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+  vi.spyOn(client, 'listActivities').mockResolvedValue([])
+  vi.spyOn(client, 'listParents')
+    .mockRejectedValueOnce(new Error('down'))
+    .mockResolvedValueOnce([
+      { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+    ])
+  render(<App />)
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    /could not load the parents/i,
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+  expect(
+    await screen.findByRole('option', { name: 'Aroha Smith' }),
+  ).toBeInTheDocument()
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+})
+
+test("a failed load of a parent's data shows an alert and Try again reloads it", async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+  vi.spyOn(client, 'listActivities').mockResolvedValue([])
+  vi.spyOn(client, 'listParents').mockResolvedValue([
+    { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+  ])
+  vi.spyOn(client, 'listStudents').mockResolvedValue([])
+  vi.spyOn(client, 'listRegistrations')
+    .mockRejectedValueOnce(new Error('down'))
+    .mockResolvedValueOnce([
+      {
+        id: 7,
+        student_id: 3,
+        activity_id: 1,
+        status: 'registered',
+        created_at: '2026-10-01T00:00:00Z',
+        student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
+        activity: trip,
+      },
+    ])
+  render(<App />)
+
+  await screen.findByRole('option', { name: 'Aroha Smith' })
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Aroha Smith')
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    /could not load this parent/i,
+  )
+
+  await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+  expect(await screen.findByText('Awaiting payment')).toBeInTheDocument()
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+})
+
 test('shows an error and logs it when loading fails', async () => {
   const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
   vi.spyOn(client, 'listActivities').mockRejectedValue(new Error('down'))

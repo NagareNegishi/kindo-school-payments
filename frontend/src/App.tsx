@@ -15,6 +15,7 @@ import {
   type Student,
 } from './api/client'
 import ChildPicker from './components/ChildPicker'
+import LoadError from './components/LoadError'
 import ParentSelect from './components/ParentSelect'
 import PaymentForm from './components/PaymentForm'
 import ReceiptView from './components/ReceiptView'
@@ -31,6 +32,11 @@ export default function App() {
   const [trips, setTrips] = useState<Activity[] | null>(null)
   const [failed, setFailed] = useState(false)
   const [parents, setParents] = useState<Parent[]>([])
+  const [parentsFailed, setParentsFailed] = useState(false)
+  const [parentsAttempt, setParentsAttempt] = useState(0)
+  // The parent whose students or registrations failed to load, if any.
+  const [dataFailedFor, setDataFailedFor] = useState<number | null>(null)
+  const [dataAttempt, setDataAttempt] = useState(0)
   const [parentId, setParentId] = useState<number | null>(null)
   // Read after an await, where the `parentId` of that render is out of date.
   const parentIdRef = useRef<number | null>(null)
@@ -53,19 +59,31 @@ export default function App() {
       })
       .catch((error: unknown) => {
         console.error('Failed to load parent data', error)
+        if (!stale) setDataFailedFor(parentId)
       })
     return () => {
       stale = true
     }
-  }, [parentId])
+  }, [parentId, dataAttempt])
 
   useEffect(() => {
     listParents()
       .then(setParents)
       .catch((error: unknown) => {
         console.error('Failed to load parents', error)
+        setParentsFailed(true)
       })
-  }, [])
+  }, [parentsAttempt])
+
+  function retryParents() {
+    setParentsFailed(false)
+    setParentsAttempt((n) => n + 1)
+  }
+
+  function retryParentData() {
+    setDataFailedFor(null)
+    setDataAttempt((n) => n + 1)
+  }
 
   useEffect(() => {
     listActivities()
@@ -161,6 +179,18 @@ export default function App() {
         />
       </header>
       <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+        {parentsFailed && (
+          <LoadError
+            message="Could not load the parents."
+            onRetry={retryParents}
+          />
+        )}
+        {dataFailedFor !== null && dataFailedFor === parentId && (
+          <LoadError
+            message="Could not load this parent's children and trips."
+            onRetry={retryParentData}
+          />
+        )}
         {payTarget !== null && (
           <PaymentForm
             // Remount per registration so typed card details never carry over.
