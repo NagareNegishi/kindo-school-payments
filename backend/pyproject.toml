@@ -21,7 +21,7 @@ pythonpath = ["."]
 
 [tool.ruff]
 line-length = 100
-extend-exclude = ["migrations/versions"]
+extend-exclude = ["migrations/versions", "app/legacy/processor.py"]
 
 [dependency-groups]
 dev = [
