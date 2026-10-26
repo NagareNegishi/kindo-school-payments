@@ -1,7 +1,3 @@
-<!-- Template skeleton. Fill in after the architecture has settled - not day one.
-     Delete this file and `context/` if the project stays small enough that
-     CLAUDE.md alone covers orientation. -->
-
 # Agent working context
 
 A lookup aid. CLAUDE.md (auto-loaded) and the code are truth.
@@ -20,10 +16,6 @@ When it disagrees with the code, the code wins and this file gets fixed on the s
 - `context/tree.md`           - every tracked file, one line each, purpose only. Search
   it for a path or area instead of `find`/`ls`/glob sweeps; never read it whole or at
   session start. Paired with `.claude/skills/read/SKILL.md`.
-
-Adjust this list to the project's real shape - merge the two invariants files for a
-single-layer app, drop `product.md` for an internal tool, add a file for a part that
-grew its own set of gotchas (e.g. billing, a queue).
 
 ## Read profile per task
 
