@@ -30,12 +30,14 @@ from its name and from other docs, not from its contents.
 
 | File | Blocked by |
 |---|---|
+| `backend/.env.example` | the permission deny rule on `.env*` files |
 
 **Tracked but only PARTLY read.** The entry describes what the file is, not what
 is in every line.
 
 | File or folder | What was read |
 |---|---|
+| `backend/uv.lock` | first 10 lines |
 | `reusables/frontend/package-lock.json` | first 40 lines |
 | `.claude/skills/owasp-guard/cache/` (48 OWASP cheat sheets) | first heading of each; `last_updated.json` in full |
 
@@ -54,9 +56,11 @@ files changed.
 
 | Area | State | Note |
 |---|---|---|
+| `backend/` | done | all 54 files read in full except `uv.lock` (partly) and `.env.example` (blocked); mapped 2026-10-26 after Step 5 |
+| `frontend/` | not started | scaffolded in Step 1, not mapped yet |
 | `build-orchestration/` | done | all 3 files |
 | `.claude/` | done | all files mapped; the 48 OWASP cheat sheets PARTLY READ (first heading only), see above |
-| `context/` | done | the 5 skeleton docs marked unfilled; `tree.md` is this file |
+| `context/` | done | `architecture.md` and `invariants.api.md` filled for the backend; the other 3 skeleton docs marked unfilled; `tree.md` is this file |
 | `.devcontainer/` | done | all 6 files |
 | `docs/` | done | all files mapped; most entries read in part, not line by line - re-verify before relying on specifics |
 | `examples/` | done | all files across `stack/` (6 stacks) and `cicd/` (3 pipelines + dependabot baseline), leaning on each folder's own README |
@@ -64,6 +68,75 @@ files changed.
 | `reusables/` | done | all files; spot-checked against description, not every file individually re-read this pass |
 | `scripts/` | done | both files |
 | root files (`CLAUDE.md`, `CONTEXT.md`, `README.md`, `LICENSE`, `.editorconfig`, `.gitignore`, `REUSABLES.md`) | done | all 7 |
+
+## backend/
+
+```
+backend/
+├── app/
+│   ├── legacy/
+│   │   ├── __init__.py   empty package marker
+│   │   ├── adapter.py    the only caller of the legacy processor: converts our values to the types it expects and runs it off the event loop
+│   │   └── processor.py  the legacy payment processor from the brief, unchanged
+│   ├── models/
+│   │   ├── __init__.py         imports every model so all tables register on the shared metadata
+│   │   ├── activity.py         activity table (the trip), money in integer cents
+│   │   ├── base.py             declarative base shared by all models
+│   │   ├── parent.py           parent table, email unique
+│   │   ├── payment_attempt.py  payment attempt table, with the unique index allowing one pending or successful attempt per registration
+│   │   ├── registration.py     registration table, one per child and activity
+│   │   ├── school.py           school table
+│   │   └── student.py          student (child) table, one parent per student
+│   ├── routers/
+│   │   ├── __init__.py       empty package marker
+│   │   ├── activities.py     activity list (upcoming only) and detail endpoints
+│   │   ├── parents.py        parent list, and each parent's children and registrations, plus adding a child
+│   │   ├── payments.py       receipt endpoint for one payment attempt
+│   │   └── registrations.py  registering a child for a trip, and paying for a registration
+│   ├── schemas/
+│   │   ├── __init__.py      empty package marker
+│   │   ├── payment.py       card request body and its validation rules
+│   │   ├── read.py          response shapes for activities, parents and students
+│   │   ├── receipt.py       response shape for a payment attempt with its child and trip
+│   │   ├── registration.py  registration request and response shapes
+│   │   └── student.py       add-child request body and the child name rule
+│   ├── services/
+│   │   ├── __init__.py  empty package marker
+│   │   ├── payment.py   the payment flow, from stale-attempt recovery to recording the processor's answer
+│   │   └── receipt.py   loads a payment attempt with its child and trip for the receipt
+│   ├── __init__.py  empty package marker
+│   ├── config.py    settings read from the environment, with the Postgres URL converted to the asyncpg form
+│   ├── db.py        async database engine and the per-request session
+│   ├── errors.py    the one error shape and the handlers that log every error
+│   ├── main.py      the FastAPI app: runs migrations and the seed on start, registers routers, error handlers and CORS
+│   └── seed.py      idempotent demo data: one school, one trip, three parents with two, one and no children
+├── migrations/
+│   ├── versions/
+│   │   └── 75b32f5f5945_create_schema.py  the one migration: all six tables and the payment attempt index
+│   ├── README           one-line Alembic note, async single-database setup
+│   ├── env.py           Alembic environment: takes the URL from app settings and migrates through an async engine
+│   └── script.py.mako   template for new migration files
+├── tests/
+│   ├── conftest.py                    session and client fixtures that run each test in a rolled-back transaction
+│   ├── test_config.py                 database URL conversion to the asyncpg form
+│   ├── test_errors.py                 every error type returns the shared shape and is logged without card data
+│   ├── test_legacy_adapter.py         adapter field types, and processor success, decline and bad-card behaviour
+│   ├── test_payment_endpoints.py      payment and receipt endpoints: status codes, decline then retry, no card data in responses or logs
+│   ├── test_payment_service.py        payment flow outcomes: success, decline, stale and fresh pending, already paid, processor crash
+│   ├── test_read_endpoints.py         activity and parent reads, with past trips hidden from the list
+│   ├── test_registration_endpoints.py registering a child, duplicate and past-trip rejection, a parent's registration list
+│   ├── test_schemas.py                each validation rule rejects bad input with the right field
+│   ├── test_seed.py                   running the seed twice adds no duplicate rows
+│   ├── test_smoke.py                  the app package imports
+│   ├── test_startup.py                start-up migrates and seeds the database
+│   └── test_student_endpoints.py      a parent sees only their own children, and adding a child
+├── .env.example     environment variable template for the backend; NOT READ (blocked)
+├── .gitignore       ignores the virtualenv and tool caches
+├── .python-version  pins Python 3.14
+├── alembic.ini      Alembic config: migrations folder, logging; the database URL comes from env.py
+├── pyproject.toml   dependencies, pytest async mode, and ruff settings that skip the legacy processor and migration files
+└── uv.lock          locked dependency versions; PARTLY READ (first 10 lines)
+```
 
 ## build-orchestration/
 
@@ -257,9 +330,9 @@ build-orchestration/
 
 ```
 context/
-├── architecture.md    skeleton for the parts/seams map; unfilled until the architecture settles
+├── architecture.md    backend parts, seams and cross-cutting rules, each with a file-path citation; frontend section still a skeleton
 ├── direction.md       skeleton for trajectory and deferrals; unfilled
-├── invariants.api.md  skeleton for backend rule categories; unfilled
+├── invariants.api.md  backend rules by category (data model, validation, payment flow, errors, config), each with a file-path citation
 ├── invariants.ui.md   skeleton for frontend rule categories; unfilled
 ├── product.md         skeleton for what the app is and who it serves; unfilled
 └── tree.md            this file: every file in the repo, one entry each, plus the Progress table
@@ -635,9 +708,9 @@ scripts/
 ```
 .editorconfig  charset, LF line endings, final newline and trailing-whitespace trim for all files except Markdown; no indent rules, stack-specific sections are added per project
 .gitignore     ignores local env files, session notes and the baton, issue/PR drafts, build-orchestration prompt-log data and scratch counters, and the per-subagent scope/worktree dirs
-CLAUDE.md      skeleton project instructions: skill/config/attribution/notes rules, doc voice, placeholder overview and architecture sections, non-negotiable rules, response style
+CLAUDE.md      project instructions: skill/config/attribution/notes rules, doc voice, project overview, docs index, commands, configuration, architecture, project rules, non-negotiable rules, response style
 CONTEXT.md     entry point: file list, which files to read per task type, and the rule that every claim carries a pointer
 LICENSE        MIT, copyright 2026 Nagare Negishi
-README.md      template repo overview: layout of each top-level folder and the instantiation checklist for turning this seed into a real project
+README.md      project overview for the school trip payment app: what it does, stack, dev container setup, assumptions and repo layout; marked setup-only
 REUSABLES.md   catalogue of the copied, project-agnostic pieces in reusables/: frontend util hooks and functions, components and shadcn primitives, backend extensions, utils and services, each with what it does and what it needs
 ```
