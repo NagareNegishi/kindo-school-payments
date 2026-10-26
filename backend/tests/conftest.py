@@ -8,6 +8,7 @@ from sqlalchemy.pool import NullPool
 from app.config import settings
 from app.db import get_session
 from app.main import app
+from app.models import Base
 from app.seed import seed
 
 
@@ -16,11 +17,15 @@ async def session() -> AsyncIterator[AsyncSession]:
     """Seeded session inside an outer transaction that is rolled back at the end.
 
     Endpoint commits only release a savepoint, so the dev database stays untouched.
+    Every table is emptied inside that transaction first, so rows already in the
+    database never change a test's outcome.
     """
     engine = create_async_engine(settings.database_url, poolclass=NullPool)
     try:
         async with engine.connect() as conn:
             outer = await conn.begin()
+            for table in reversed(Base.metadata.sorted_tables):
+                await conn.execute(table.delete())
             async with AsyncSession(
                 conn, join_transaction_mode="create_savepoint", expire_on_commit=False
             ) as s:
