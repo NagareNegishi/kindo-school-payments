@@ -79,6 +79,7 @@ test('choosing a parent shows their unpaid registrations', async () => {
         activity: trip,
       },
     ])
+  vi.spyOn(client, 'listStudents').mockResolvedValue([])
   render(<App />)
 
   await screen.findByRole('option', { name: 'Aroha Smith' })
@@ -89,6 +90,55 @@ test('choosing a parent shows their unpaid registrations', async () => {
   expect(await screen.findByText('Awaiting payment')).toBeInTheDocument()
   expect(screen.getByText(/Mia Smith/)).toBeInTheDocument()
   expect(listRegistrations).toHaveBeenCalledWith(1)
+})
+
+test('registering a child for a trip calls the API and closes the picker', async () => {
+  const mia = { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 }
+  vi.spyOn(client, 'listActivities').mockResolvedValue([trip])
+  vi.spyOn(client, 'listParents').mockResolvedValue([
+    { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+  ])
+  vi.spyOn(client, 'listStudents').mockResolvedValue([mia])
+  const listRegistrations = vi
+    .spyOn(client, 'listRegistrations')
+    .mockResolvedValueOnce([])
+    .mockResolvedValueOnce([
+      {
+        id: 7,
+        student_id: 3,
+        activity_id: 1,
+        status: 'registered',
+        created_at: '2026-10-01T00:00:00Z',
+        student: mia,
+        activity: trip,
+      },
+    ])
+  const createRegistration = vi
+    .spyOn(client, 'createRegistration')
+    .mockResolvedValue({
+      id: 7,
+      student_id: 3,
+      activity_id: 1,
+      status: 'registered',
+      created_at: '2026-10-01T00:00:00Z',
+    })
+  render(<App />)
+
+  await screen.findByRole('option', { name: 'Aroha Smith' })
+  expect(
+    screen.queryByRole('button', { name: 'Register a child' }),
+  ).not.toBeInTheDocument()
+
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Aroha Smith')
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Register a child' }),
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Mia Smith' }))
+
+  expect(createRegistration).toHaveBeenCalledWith(3, 1)
+  expect(await screen.findByText('Awaiting payment')).toBeInTheDocument()
+  expect(screen.queryByText('Choose a child')).not.toBeInTheDocument()
+  expect(listRegistrations).toHaveBeenCalledTimes(2)
 })
 
 test('shows an error and logs it when loading fails', async () => {

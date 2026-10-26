@@ -1,7 +1,14 @@
+import type { ReactNode } from 'react'
 import type { Activity } from '../api/client'
 import TripCard from './TripCard'
 
-export default function TripList({ trips }: { trips: Activity[] }) {
+interface Props {
+  trips: Activity[]
+  /** Extra content shown inside each trip's card. */
+  renderExtra?: (trip: Activity) => ReactNode
+}
+
+export default function TripList({ trips, renderExtra }: Props) {
   if (trips.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-gray-600">
@@ -14,7 +21,7 @@ export default function TripList({ trips }: { trips: Activity[] }) {
     <ul className="space-y-4">
       {trips.map((trip) => (
         <li key={trip.id}>
-          <TripCard trip={trip} />
+          <TripCard trip={trip}>{renderExtra?.(trip)}</TripCard>
         </li>
       ))}
     </ul>

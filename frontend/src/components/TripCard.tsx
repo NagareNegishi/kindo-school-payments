@@ -1,7 +1,14 @@
+import type { ReactNode } from 'react'
 import type { Activity } from '../api/client'
 import { formatCost, formatDate } from '../format'
 
-export default function TripCard({ trip }: { trip: Activity }) {
+interface Props {
+  trip: Activity
+  /** Optional area under the details, such as the register button or child picker. */
+  children?: ReactNode
+}
+
+export default function TripCard({ trip, children }: Props) {
   return (
     <article className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
@@ -25,6 +32,7 @@ export default function TripCard({ trip }: { trip: Activity }) {
       {trip.description && (
         <p className="mt-3 text-sm text-gray-800">{trip.description}</p>
       )}
+      {children}
     </article>
   )
 }

@@ -26,13 +26,16 @@ export interface Student {
   parent_id: number
 }
 
-/** A registration with its child and trip; `status` is `registered` until paid. */
-export interface Registration {
+export interface RegistrationBasic {
   id: number
   student_id: number
   activity_id: number
   status: string
   created_at: string
+}
+
+/** A registration with its child and trip; `status` is `registered` until paid. */
+export interface Registration extends RegistrationBasic {
   student: Student
   activity: Activity
 }
@@ -71,12 +74,41 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>
 }
 
+function jsonPost(body: unknown): RequestInit {
+  return {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }
+}
+
 export function listActivities(): Promise<Activity[]> {
   return request<Activity[]>('/activities')
 }
 
 export function listParents(): Promise<Parent[]> {
   return request<Parent[]>('/parents')
+}
+
+export function listStudents(parentId: number): Promise<Student[]> {
+  return request<Student[]>(`/parents/${parentId}/students`)
+}
+
+export function createStudent(
+  parentId: number,
+  name: string,
+): Promise<Student> {
+  return request<Student>(`/parents/${parentId}/students`, jsonPost({ name }))
+}
+
+export function createRegistration(
+  studentId: number,
+  activityId: number,
+): Promise<RegistrationBasic> {
+  return request<RegistrationBasic>(
+    '/registrations',
+    jsonPost({ student_id: studentId, activity_id: activityId }),
+  )
 }
 
 export function listRegistrations(parentId: number): Promise<Registration[]> {
