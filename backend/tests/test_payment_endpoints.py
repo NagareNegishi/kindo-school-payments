@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.models import Activity, PaymentAttempt, Registration, School, Student
 
@@ -109,6 +109,17 @@ async def test_payment_bad_card_422_names_field(client, session):
     assert res.json()["field"] == "cvv"
 
 
+async def test_invalid_card_creates_no_attempt_and_is_not_echoed(client, session):
+    registration = await _registration(session)
+
+    res = await client.post(
+        f"/registrations/{registration.id}/payments", json={**CARD, "cvv": "12"}
+    )
+
+    assert "4111" not in res.text
+    assert await session.scalar(select(func.count()).select_from(PaymentAttempt)) == 0
+
+
 async def test_client_amount_rejected(client, session):
     registration = await _registration(session)
 
@@ -176,13 +187,16 @@ async def test_get_unsuccessful_payment_404(client, session, status):
     assert res.json()["code"] == "payment_not_found"
 
 
-async def test_errors_and_attempts_are_logged_without_card_data(client, session, caplog):
+@pytest.mark.parametrize("random_value", [0.01, 0.5], ids=["declined", "approved"])
+async def test_errors_and_attempts_are_logged_without_card_data(
+    client, session, caplog, random_value
+):
     caplog.set_level(logging.INFO)
     registration = await _registration(session)
     url = f"/registrations/{registration.id}/payments"
 
     await client.post(url, json={**CARD, "card_number": "4111 1111 1111 111x"})
-    with processor(random_value=0.01):
+    with processor(random_value=random_value):
         await client.post(url, json=CARD)
 
     assert "validation error" in caplog.text

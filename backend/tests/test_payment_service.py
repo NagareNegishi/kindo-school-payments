@@ -114,6 +114,8 @@ async def test_fresh_pending_attempt_blocks_payment(session):
 
     assert error.status_code == 409
     assert error.detail["code"] == "payment_in_progress"
+    # The live attempt is left as it was and no second one is added.
+    assert [a.status for a in await _attempts(session, registration.id)] == ["pending"]
 
 
 async def test_second_payment_on_paid_registration_409(session):
