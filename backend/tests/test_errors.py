@@ -81,6 +81,23 @@ def test_unhandled_error_is_generic(client):
     }
 
 
+def test_wrong_method_shape(client):
+    res = client.get("/pay")
+    assert res.status_code == 405
+    assert res.json() == {
+        "code": "method_not_allowed",
+        "message": "Method Not Allowed",
+        "field": None,
+    }
+
+
+def test_unhandled_error_is_logged_with_a_stack_trace(client, caplog):
+    client.get("/boom")
+    record = next(r for r in caplog.records if "unhandled error" in r.getMessage())
+    assert record.levelno == logging.ERROR
+    assert record.exc_info is not None
+
+
 def test_errors_are_logged_without_card_data(client, caplog):
     caplog.set_level(logging.INFO)
     bad = {"card_number": "4111 1111 1111 111x", "expiry_date": "01/20", "cvv": "98x"}

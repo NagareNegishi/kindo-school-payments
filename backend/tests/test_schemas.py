@@ -53,7 +53,25 @@ def test_expiry_last_month_rejected():
     assert _error_codes(check_expiry, "09/26", TODAY) == "card_expired"
 
 
-@pytest.mark.parametrize("value", ["", "1/27", "13/27", "00/27", "12-27", "12/2027", "ab/cd"])
+@pytest.mark.parametrize("value", ["10/26", "11/26", "01/27", "12/99"])
+def test_expiry_this_month_or_later_accepted(value):
+    assert check_expiry(value, TODAY) == value
+
+
+@pytest.mark.parametrize("value", ["09/26", "12/25", "10/25", "01/26"])
+def test_expiry_before_this_month_rejected(value):
+    assert _error_codes(check_expiry, value, TODAY) == "card_expired"
+
+
+def test_expiry_rolls_over_the_year_end():
+    january = dt.date(2027, 1, 15)
+    assert _error_codes(check_expiry, "12/26", january) == "card_expired"
+    assert check_expiry("01/27", january) == "01/27"
+
+
+@pytest.mark.parametrize(
+    "value", ["", "1/27", "13/27", "00/27", "12-27", "12/2027", "ab/cd", "١٢/٢٧"]
+)
 def test_expiry_bad_format_rejected(value):
     assert _error_codes(check_expiry, value, TODAY) == "invalid_expiry_format"
 
