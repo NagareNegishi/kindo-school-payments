@@ -22,6 +22,7 @@ import ReceiptView from './components/ReceiptView'
 import RegistrationList from './components/RegistrationList'
 import TripList from './components/TripList'
 import { useLoad } from './useLoad'
+import { useScrollIntoView } from './useScrollIntoView'
 
 interface ParentData {
   parentId: number
@@ -53,6 +54,9 @@ export default function App() {
   const [receiptFailed, setReceiptFailed] = useState(false)
 
   const data = loaded !== null && loaded.parentId === parentId ? loaded : null
+  // Bring the payment form, receipt and child picker into view when they open.
+  const detailRef = useScrollIntoView(payTarget ?? receipt)
+  const pickerRef = useScrollIntoView(registeringTripId, 'nearest')
 
   useEffect(() => {
     if (parentId === null) return
@@ -167,13 +171,15 @@ export default function App() {
         .map((reg) => reg.student_id),
     )
     return (
-      <ChildPicker
-        students={data.students}
-        registeredIds={registeredIds}
-        onSelect={(student) => registerChild(student, trip)}
-        onAdd={addChild}
-        onCancel={() => setRegisteringTripId(null)}
-      />
+      <div ref={pickerRef}>
+        <ChildPicker
+          students={data.students}
+          registeredIds={registeredIds}
+          onSelect={(student) => registerChild(student, trip)}
+          onAdd={addChild}
+          onCancel={() => setRegisteringTripId(null)}
+        />
+      </div>
     )
   }
 
@@ -200,18 +206,20 @@ export default function App() {
             onRetry={retryParentData}
           />
         )}
-        {payTarget !== null && (
-          <PaymentForm
-            // Remount per registration so typed card details never carry over.
-            key={payTarget.id}
-            registration={payTarget}
-            onSubmit={pay}
-            onCancel={() => setPayTarget(null)}
-          />
-        )}
-        {receipt !== null && (
-          <ReceiptView receipt={receipt} onDone={() => setReceipt(null)} />
-        )}
+        <div ref={detailRef}>
+          {payTarget !== null && (
+            <PaymentForm
+              // Remount per registration so typed card details never carry over.
+              key={payTarget.id}
+              registration={payTarget}
+              onSubmit={pay}
+              onCancel={() => setPayTarget(null)}
+            />
+          )}
+          {receipt !== null && (
+            <ReceiptView receipt={receipt} onDone={() => setReceipt(null)} />
+          )}
+        </div>
         {receiptFailed && (
           <p role="alert" className="mb-4 text-red-700">
             Could not load the receipt. Please try again.
