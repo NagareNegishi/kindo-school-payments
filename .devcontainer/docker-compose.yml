@@ -1,4 +1,5 @@
-version: '3.8'
+# Pins the Compose project name so container, image and volume names don't follow the folder name
+name: kindo
 
 services:
   app:
@@ -11,7 +12,7 @@ services:
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
 
-    # Granting specific Linux kernel capabilities — required by project-firewall.sh
+    # Granting specific Linux kernel capabilities
     cap_add:
       # Grants permission to modify network interfaces and routing rules
       - NET_ADMIN
@@ -24,11 +25,21 @@ services:
     # Use "forwardPorts" in **devcontainer.json** to forward an app port locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
 
-  # <placeholder> stack services, e.g. a db service (see examples/)
+  db:
+    image: postgres:14.3
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+    # Add "forwardPorts": ["5432"] to **devcontainer.json** to forward PostgreSQL locally.
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
 
 volumes:
-  # Fixed name shared by every project built from the seed: one Claude login/config.
-  # Reuses the existing volume if present, creates it otherwise.
+  postgres-data:
+  # find existing volume named "claude-credentials" and use it, or create a new one if it doesn't exist
   claude-credentials:
     name: claude-credentials
-  # <placeholder> stack volumes, e.g. db data or dev-cert volumes (see examples/)
