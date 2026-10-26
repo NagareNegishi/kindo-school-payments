@@ -17,7 +17,7 @@ lowest: 🤖 ai-audited
 | 7 | done | #3 |
 | 8 | done | #3 |
 | 9 | done | #4 |
-| 10 | planned | #5 |
+| 10 | done | #5 |
 
 ## Overview
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (not checked)
@@ -129,3 +129,7 @@ The browser check (`docs/plans/manual-check.md`) is left to the user, outside th
 - [ ] Set `VITE_API_URL` and the CORS origin; use `.env.example` for the Render variables.
 - [ ] Add the live URL to the README.
 - [ ] Open the backend URL before the demo to wake it; the free Postgres expires 30 days after creation.
+
+Ready in the repo (checked in code): `backend/.python-version` pins 3.14, `backend/uv.lock` and `frontend/package-lock.json` are committed, `config.py` converts both `postgresql://` and `postgres://` to the asyncpg form and reads `FRONTEND_ORIGIN`, migrations and the seed run on start, `frontend` reads `VITE_API_URL` at build time.
+
+Closed on the repo side. The user does the Render setup later in the dashboard by following `render-deploy.md` (verified; no `render.yaml` needed), outside this step. Merge `feat/school-trip-payments` to `main` first, since auto-deploy follows `main`. After the deploy: add the live URLs to the README and add `DATABASE_URL`, `FRONTEND_ORIGIN` and `VITE_API_URL` to the `.env.example` files if missing.

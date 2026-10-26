@@ -1,7 +1,7 @@
 <!-- Update convention: read at session start; update after each major feature
      completes. One line per decision — state the decision, skip the reasoning. -->
 
-Kindo school payments: FastAPI + React + Postgres app where a parent registers a child for a school trip and pays through a mock legacy processor. Backend and frontend done (Steps 1-8); README and `AI_WORKINGS.md` done (Step 9). Browser check pending, user runs it later; deploy (Step 10) next.
+Kindo school payments: FastAPI + React + Postgres app where a parent registers a child for a school trip and pays through a mock legacy processor. Backend and frontend done (Steps 1-8); README and `AI_WORKINGS.md` done (Step 9). Step 10 closed on the repo side. Browser check and the Render setup (`docs/kindo-payments/render-deploy.md`) are left to the user.
 
 ## Key Decisions
 
@@ -15,4 +15,4 @@ Kindo school payments: FastAPI + React + Postgres app where a parent registers a
 ## In Progress — pick up next session
 
 - Browser check (`docs/plans/manual-check.md`), user runs it later; then confirm README against the app
-- #5 chore: deploy to Render
+- Render setup from `docs/kindo-payments/render-deploy.md`, after merging to `main`
