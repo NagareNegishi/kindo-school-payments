@@ -10,4 +10,8 @@
 
 ## In Progress — pick up next session
 
-- <what's unfinished, one line each>
+- #1 chore: backend, frontend and database skeletons
+- #2 feat: backend API and payment service
+- #3 feat: frontend for registering and paying
+- #4 docs: README and AI_WORKINGS
+- #5 chore: deploy to Render

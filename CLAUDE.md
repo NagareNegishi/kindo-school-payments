@@ -49,7 +49,8 @@ The dev environment runs in a Dev Container (`.devcontainer/`).
 - `docs/kindo-payments/Kindo School Payments – Implementation Plan.md` - the
   source of truth for scope, data model, API, validation, tests, and build order.
   Read it before any task. `Tech_Challenge.md` is the original brief;
-  `legacy_payment.py` is the processor.
+  `legacy_payment.py` is the processor. On any conflict between the
+  Implementation Plan and `Tech_Challenge.md`, the Implementation Plan wins.
 - `CONTEXT.md` + `context/` — fast-orientation index (parts, seams, invariants,
   direction), citation-per-line, pulled on demand. Not a source of truth — see
   `CONTEXT.md` for the convention and which file to read per task.
