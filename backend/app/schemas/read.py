@@ -18,6 +18,15 @@ class ActivityOut(BaseModel):
     description: str | None
 
 
+class StudentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    school_id: int
+    parent_id: int
+
+
 class ParentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

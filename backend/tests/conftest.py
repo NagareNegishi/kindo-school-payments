@@ -13,13 +13,20 @@ from app.seed import seed
 
 @pytest.fixture
 async def session() -> AsyncIterator[AsyncSession]:
-    """Seeded session whose changes are rolled back, so the dev database stays untouched."""
+    """Seeded session inside an outer transaction that is rolled back at the end.
+
+    Endpoint commits only release a savepoint, so the dev database stays untouched.
+    """
     engine = create_async_engine(settings.database_url, poolclass=NullPool)
     try:
-        async with AsyncSession(engine) as s:
-            await seed(s)
-            yield s
-            await s.rollback()
+        async with engine.connect() as conn:
+            outer = await conn.begin()
+            async with AsyncSession(
+                conn, join_transaction_mode="create_savepoint", expire_on_commit=False
+            ) as s:
+                await seed(s)
+                yield s
+            await outer.rollback()
     finally:
         await engine.dispose()
 
