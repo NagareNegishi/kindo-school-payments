@@ -12,7 +12,7 @@ lowest: 🤖 ai-audited
 | 2 | done | #2 |
 | 3 | done | #2 |
 | 4 | done | #2 |
-| 5 | planned | #2 |
+| 5 | done | #2 |
 | 6 | planned | #3 |
 | 7 | planned | #3 |
 | 8 | planned | #3 |
@@ -73,14 +73,14 @@ Backend first, then frontend, then docs and deploy, in the order of the Implemen
 ### Step 5: Add endpoints, payment service and logging
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
 
-- [ ] Read endpoints: `GET /activities` (upcoming only), `GET /activities/{id}`, `GET /parents`.
-- [ ] Student endpoints: `GET` and `POST /parents/{id}/students`. Test: only the selected parent's children are returned.
-- [ ] `POST /registrations` (409 for duplicate or past activity) and `GET /parents/{id}/registrations`. Tests: duplicate 409; past activity hidden from the list and registration 409.
-- [ ] Payment service in `services/`: validate, mark `pending` attempts older than 60 s `failed`, reject if paid or pending, insert `pending` and commit.
-- [ ] Payment service: call the adapter, then record `success` (attempt and registration `paid` in one transaction) or `failed`.
-- [ ] `POST /registrations/{id}/payments` (201, 402 declined, 409, 422; allowed after the activity date) and `GET /payments/{id}`.
-- [ ] Tests: success; decline then retry; stale pending recovered; second payment 409; payment for a past-activity registration accepted.
-- [ ] Logging to stdout for every error and every payment attempt result; store only `card_last4`. Test: errors are logged without card data.
+- [x] Read endpoints: `GET /activities` (upcoming only), `GET /activities/{id}`, `GET /parents`.
+- [x] Student endpoints: `GET` and `POST /parents/{id}/students`. Test: only the selected parent's children are returned.
+- [x] `POST /registrations` (409 for duplicate or past activity) and `GET /parents/{id}/registrations`. Tests: duplicate 409; past activity hidden from the list and registration 409.
+- [x] Payment service in `services/`: validate, mark `pending` attempts older than 60 s `failed`, reject if paid or pending, insert `pending` and commit.
+- [x] Payment service: call the adapter, then record `success` (attempt and registration `paid` in one transaction) or `failed`.
+- [x] `POST /registrations/{id}/payments` (201, 402 declined, 409, 422; allowed after the activity date) and `GET /payments/{id}`.
+- [x] Tests: success; decline then retry; stale pending recovered; second payment 409; payment for a past-activity registration accepted.
+- [x] Logging to stdout for every error and every payment attempt result; store only `card_last4`. Test: errors are logged without card data.
 
 ### Step 6: Add the API client and trip card
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
