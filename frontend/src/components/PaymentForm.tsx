@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
-import { ApiError, type CardInput, type Registration } from '../api/client'
+import { type CardInput, type Registration } from '../api/client'
 import { formatCost } from '../format'
+import { describePaymentError, type PaymentErrorView } from '../paymentErrors'
 import { validateCardNumber, validateCvv, validateExpiry } from '../validation'
 
 type Field = keyof CardInput
@@ -10,18 +11,6 @@ interface Props {
   /** Runs the payment; rejects with an ApiError or a network error when it fails. */
   onSubmit: (card: CardInput) => Promise<void>
   onCancel: () => void
-}
-
-interface Banner {
-  message: string
-  canRetry: boolean
-}
-
-const NETWORK_MESSAGE =
-  'Could not reach the server. Check your connection and try again.'
-
-function isField(name: string | null): name is Field {
-  return name === 'card_number' || name === 'expiry_date' || name === 'cvv'
 }
 
 const validators: Record<Field, (value: string) => string | null> = {
@@ -52,29 +41,18 @@ export default function PaymentForm({
   )
 
   const [pending, setPending] = useState(false)
-  const [banner, setBanner] = useState<Banner | null>(null)
+  const [banner, setBanner] = useState<NonNullable<
+    PaymentErrorView['banner']
+  > | null>(null)
 
   /** Puts a backend field error on its input; anything else becomes a banner. */
   function showFailure(error: unknown) {
-    if (error instanceof ApiError) {
-      if (isField(error.field)) {
-        setErrors((prev) => ({
-          ...prev,
-          [error.field as Field]: error.message,
-        }))
-        return
-      }
-      if (error.status < 500) {
-        // A decline (402) can be retried; other client errors will not change on retry.
-        setBanner({ message: error.message, canRetry: error.status === 402 })
-        return
-      }
-      console.error('Payment failed', error)
-      setBanner({ message: error.message, canRetry: true })
-      return
+    const view = describePaymentError(error)
+    if (view.unexpected) console.error('Payment failed', error)
+    if (view.fieldErrors) {
+      setErrors((prev) => ({ ...prev, ...view.fieldErrors }))
     }
-    console.error('Payment failed', error)
-    setBanner({ message: NETWORK_MESSAGE, canRetry: true })
+    setBanner(view.banner ?? null)
   }
 
   async function submitValues() {
