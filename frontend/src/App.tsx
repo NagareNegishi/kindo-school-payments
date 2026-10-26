@@ -13,6 +13,7 @@ import {
 } from './api/client'
 import ChildPicker from './components/ChildPicker'
 import ParentSelect from './components/ParentSelect'
+import PaymentForm from './components/PaymentForm'
 import TripList from './components/TripList'
 import UnpaidRegistrations from './components/UnpaidRegistrations'
 
@@ -32,8 +33,7 @@ export default function App() {
   const [registeringTripId, setRegisteringTripId] = useState<number | null>(
     null,
   )
-  // Read by the payment form in the next step.
-  const [, setPayTarget] = useState<Registration | null>(null)
+  const [payTarget, setPayTarget] = useState<Registration | null>(null)
 
   const data = loaded !== null && loaded.parentId === parentId ? loaded : null
 
@@ -72,6 +72,7 @@ export default function App() {
   function chooseParent(id: number | null) {
     setParentId(id)
     setRegisteringTripId(null)
+    setPayTarget(null)
   }
 
   async function addChild(name: string) {
@@ -129,6 +130,16 @@ export default function App() {
         />
       </header>
       <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+        {payTarget !== null && (
+          <PaymentForm
+            // Remount per registration so typed card details never carry over.
+            key={payTarget.id}
+            registration={payTarget}
+            // The payment call is wired in step 8.
+            onSubmit={() => {}}
+            onCancel={() => setPayTarget(null)}
+          />
+        )}
         {data !== null && (
           <UnpaidRegistrations
             registrations={data.registrations}

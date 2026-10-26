@@ -139,6 +139,37 @@ test('registering a child for a trip calls the API and closes the picker', async
   expect(await screen.findByText('Awaiting payment')).toBeInTheDocument()
   expect(screen.queryByText('Choose a child')).not.toBeInTheDocument()
   expect(listRegistrations).toHaveBeenCalledTimes(2)
+  expect(screen.getByLabelText('Card number')).toBeInTheDocument()
+})
+
+test('the Pay button opens the payment form and Cancel closes it', async () => {
+  vi.spyOn(client, 'listActivities').mockResolvedValue([])
+  vi.spyOn(client, 'listParents').mockResolvedValue([
+    { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+  ])
+  vi.spyOn(client, 'listStudents').mockResolvedValue([])
+  vi.spyOn(client, 'listRegistrations').mockResolvedValue([
+    {
+      id: 7,
+      student_id: 3,
+      activity_id: 1,
+      status: 'registered',
+      created_at: '2026-10-01T00:00:00Z',
+      student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
+      activity: trip,
+    },
+  ])
+  render(<App />)
+
+  await screen.findByRole('option', { name: 'Aroha Smith' })
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Aroha Smith')
+  expect(screen.queryByLabelText('Card number')).not.toBeInTheDocument()
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Pay' }))
+  expect(screen.getByLabelText('Card number')).toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+  expect(screen.queryByLabelText('Card number')).not.toBeInTheDocument()
 })
 
 test('shows an error and logs it when loading fails', async () => {
