@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import App from './App'
@@ -223,6 +223,63 @@ test('paying shows the receipt and drops the registration from the unpaid list',
   })
   expect(screen.queryByLabelText('Card number')).not.toBeInTheDocument()
   expect(screen.queryByText('Awaiting payment')).not.toBeInTheDocument()
+})
+
+test('a receipt is not shown under another parent after a switch mid-payment', async () => {
+  const registration: client.Registration = {
+    id: 7,
+    student_id: 3,
+    activity_id: 1,
+    status: 'registered',
+    created_at: '2026-10-01T00:00:00Z',
+    student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
+    activity: trip,
+  }
+  vi.spyOn(client, 'listActivities').mockResolvedValue([])
+  vi.spyOn(client, 'listParents').mockResolvedValue([
+    { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+    { id: 2, name: 'Tom Wilson', email: 'tom@example.com' },
+  ])
+  vi.spyOn(client, 'listStudents').mockResolvedValue([])
+  vi.spyOn(client, 'listRegistrations').mockImplementation(async (id) =>
+    id === 1 ? [registration] : [],
+  )
+  let finishPayment: (receipt: client.Receipt) => void = () => {}
+  vi.spyOn(client, 'createPayment').mockReturnValue(
+    new Promise((resolve) => {
+      finishPayment = resolve
+    }),
+  )
+  render(<App />)
+
+  await screen.findByRole('option', { name: 'Aroha Smith' })
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Aroha Smith')
+  await userEvent.click(await screen.findByRole('button', { name: 'Pay' }))
+  await userEvent.type(
+    screen.getByLabelText('Card number'),
+    '4111 1111 1111 1111',
+  )
+  await userEvent.type(screen.getByLabelText('Expiry (MM/YY)'), '12/99')
+  await userEvent.type(screen.getByLabelText('CVV'), '123')
+  await userEvent.click(screen.getByRole('button', { name: /^Pay \$/ }))
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Tom Wilson')
+
+  await act(async () => {
+    finishPayment({
+      id: 5,
+      registration_id: 7,
+      status: 'success',
+      amount_cents: 4550,
+      legacy_transaction_id: 'TXN-123',
+      card_last4: '1111',
+      created_at: '2026-10-26T01:00:00Z',
+      student_name: 'Mia Smith',
+      activity_title: 'Zoo trip',
+      activity_date: '2026-11-05',
+    })
+  })
+
+  expect(screen.queryByText('TXN-123')).not.toBeInTheDocument()
 })
 
 test('shows an error and logs it when loading fails', async () => {

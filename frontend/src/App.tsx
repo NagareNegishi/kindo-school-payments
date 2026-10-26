@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   createPayment,
   createRegistration,
@@ -32,6 +32,8 @@ export default function App() {
   const [failed, setFailed] = useState(false)
   const [parents, setParents] = useState<Parent[]>([])
   const [parentId, setParentId] = useState<number | null>(null)
+  // Read after an await, where the `parentId` of that render is out of date.
+  const parentIdRef = useRef<number | null>(null)
   // Tagged with its parent so a slow response never shows under another parent.
   const [loaded, setLoaded] = useState<ParentData | null>(null)
   const [registeringTripId, setRegisteringTripId] = useState<number | null>(
@@ -76,6 +78,7 @@ export default function App() {
 
   function chooseParent(id: number | null) {
     setParentId(id)
+    parentIdRef.current = id
     setRegisteringTripId(null)
     setPayTarget(null)
     setReceipt(null)
@@ -85,6 +88,9 @@ export default function App() {
   async function pay(card: CardInput) {
     if (payTarget === null || data === null) return
     const paid = await createPayment(payTarget.id, card)
+    // The parent was switched while paying; their unpaid list reloads when picked again.
+    // The parent was switched while paying; their unpaid list reloads when picked again.
+    if (parentIdRef.current !== data.parentId) return
     setReceipt(paid)
     setPayTarget(null)
     // The payment went through; a failed refresh must not read as a payment error.
