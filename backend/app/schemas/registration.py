@@ -29,3 +29,5 @@ class RegistrationDetail(RegistrationOut):
 
     student: StudentOut
     activity: ActivityOut
+    # The successful payment attempt, so the receipt can be opened; None until paid.
+    payment_id: int | None = None

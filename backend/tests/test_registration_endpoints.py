@@ -2,7 +2,7 @@ import datetime as dt
 
 from sqlalchemy import select
 
-from app.models import Activity, Parent, Registration, School, Student
+from app.models import Activity, Parent, PaymentAttempt, Registration, School, Student
 
 
 async def _student_id(session, name: str) -> int:
@@ -126,6 +126,30 @@ async def test_parent_registrations_include_past_and_only_own(client, session):
     assert {r["student"]["name"] for r in rows} == {"Mia Smith"}
     assert rows[0]["status"] == "registered"
     assert rows[1]["activity"]["cost_cents"] == 4500
+
+
+async def test_parent_registrations_carry_the_successful_payment_id(client, session):
+    mia = await _student_id(session, "Mia Smith")
+    trip = await _trip_id(session)
+    past = await _past_trip(session)
+    paid = Registration(student_id=mia, activity_id=past.id, status="paid")
+    declined = Registration(student_id=mia, activity_id=trip)
+    session.add_all([paid, declined])
+    await session.flush()
+    success = PaymentAttempt(
+        registration_id=paid.id, amount_cents=1000, status="success", card_last4="1111"
+    )
+    failed = PaymentAttempt(
+        registration_id=declined.id, amount_cents=4500, status="failed", card_last4="1111"
+    )
+    session.add_all([success, failed])
+    await session.flush()
+
+    res = await client.get(f"/parents/{await _parent_id(session, 'Aroha Smith')}/registrations")
+
+    by_title = {r["activity"]["title"]: r for r in res.json()}
+    assert by_title["Old Trip"]["payment_id"] == success.id
+    assert by_title["Zoo Trip"]["payment_id"] is None
 
 
 async def test_parent_registrations_unknown_parent_404(client):

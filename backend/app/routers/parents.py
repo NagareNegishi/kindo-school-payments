@@ -6,7 +6,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import Session, get_or_404
 from app.errors import api_error
-from app.models import Activity, Parent, Registration, School, Student
+from app.models import (
+    Activity,
+    AttemptStatus,
+    Parent,
+    PaymentAttempt,
+    Registration,
+    School,
+    Student,
+)
 from app.schemas.read import ActivityOut, ParentOut, StudentOut
 from app.schemas.registration import RegistrationDetail, RegistrationOut
 from app.schemas.student import StudentCreate
@@ -41,10 +49,16 @@ async def list_students(parent_id: int, session: Session):
 async def list_registrations(parent_id: int, session: Session):
     """Registrations of the parent's children, past trips included."""
     await _get_parent(session, parent_id)
+    # At most one successful attempt per registration (partial unique index).
     rows = await session.execute(
-        select(Registration, Student, Activity)
+        select(Registration, Student, Activity, PaymentAttempt.id)
         .join(Student, Registration.student_id == Student.id)
         .join(Activity, Registration.activity_id == Activity.id)
+        .outerjoin(
+            PaymentAttempt,
+            (PaymentAttempt.registration_id == Registration.id)
+            & (PaymentAttempt.status == AttemptStatus.SUCCESS),
+        )
         .where(Student.parent_id == parent_id)
         .order_by(Activity.date, Registration.id)
     )
@@ -53,8 +67,9 @@ async def list_registrations(parent_id: int, session: Session):
             **RegistrationOut.model_validate(reg).model_dump(),
             student=StudentOut.model_validate(student),
             activity=ActivityOut.model_validate(activity),
+            payment_id=payment_id,
         )
-        for reg, student, activity in rows
+        for reg, student, activity, payment_id in rows
     ]
 
 
