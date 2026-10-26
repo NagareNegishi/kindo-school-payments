@@ -16,7 +16,7 @@ lowest: 🤖 ai-audited
 | 6 | done | #3 |
 | 7 | done | #3 |
 | 8 | done | #3 |
-| 9 | in progress | #4 |
+| 9 | done | #4 |
 | 10 | planned | #5 |
 
 ## Overview
@@ -116,10 +116,11 @@ Backend first, then frontend, then docs and deploy, in the order of the Implemen
 
 - [x] README: setup, solution overview, assumptions (no login, NZD, mock processor) and design decisions.
 - [x] README: link to `AI_WORKINGS.md`.
-- [ ] Browser check from `docs/plans/manual-check.md` (user runs it later); then confirm the README claims against the running app.
-- [ ] `AI_WORKINGS.md`: tools used and for what, key prompts, `CLAUDE.md` committed.
-- [ ] `AI_WORKINGS.md`: at least one AI mistake with how it was noticed and the fix, and what was written, rewritten or rejected by hand and why.
-- [ ] Laptop ready to run the app and walk through the code at the demo.
+- [x] `AI_WORKINGS.md`: tools used and for what, key prompts, `CLAUDE.md` committed.
+- [x] `AI_WORKINGS.md`: at least one AI mistake with how it was noticed and the fix, and what was written, rewritten or rejected by hand and why.
+- [x] Laptop ready to run the app and walk through the code at the demo.
+
+The browser check (`docs/plans/manual-check.md`) is left to the user, outside this step.
 
 ### Step 10: Deploy to Render
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
