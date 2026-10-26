@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { type CardInput, type Registration } from '../api/client'
 import { formatCost } from '../format'
 import { describePaymentError, type PaymentErrorView } from '../paymentErrors'
@@ -41,6 +41,7 @@ export default function PaymentForm({
   )
 
   const [pending, setPending] = useState(false)
+  const submitting = useRef(false)
   const [banner, setBanner] = useState<NonNullable<
     PaymentErrorView['banner']
   > | null>(null)
@@ -56,17 +57,21 @@ export default function PaymentForm({
   }
 
   async function submitValues() {
+    // State updates are async, so a ref stops a second submit in the same tick.
+    if (submitting.current) return
     const next: Partial<Record<Field, string | null>> = {}
     for (const { name } of fields) next[name] = validators[name](values[name])
     setErrors(next)
     if (Object.values(next).some((error) => error !== null)) return
     setBanner(null)
+    submitting.current = true
     setPending(true)
     try {
       await onSubmit(values)
     } catch (error) {
       showFailure(error)
     } finally {
+      submitting.current = false
       setPending(false)
     }
   }

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { ApiError, type Registration } from '../api/client'
@@ -112,6 +112,23 @@ test('submit is disabled with a spinner while the payment runs', async () => {
 
   finish()
   expect(await screen.findByRole('button', { name: /^Pay \$/ })).toBeEnabled()
+})
+
+test('a second submit while the payment runs is ignored', async () => {
+  let finish: () => void = () => {}
+  const { onSubmit } = setup(
+    vi.fn().mockReturnValue(new Promise<void>((resolve) => (finish = resolve))),
+  )
+  await fillValid()
+  await userEvent.click(screen.getByRole('button', { name: /^Pay/ }))
+
+  fireEvent.submit(
+    screen.getByRole('button', { name: 'Paying...' }).closest('form')!,
+  )
+
+  expect(onSubmit).toHaveBeenCalledTimes(1)
+  finish()
+  await screen.findByRole('button', { name: /^Pay \$/ })
 })
 
 test('a decline shows the processor message and retry resubmits the same input', async () => {
