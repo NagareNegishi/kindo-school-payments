@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db import SessionLocal, engine
 from app.errors import register_exception_handlers
-from app.routers import activities, parents, registrations
+from app.routers import activities, parents, payments, registrations
 from app.seed import seed
 
 ALEMBIC_INI = Path(__file__).resolve().parent.parent / "alembic.ini"
@@ -39,6 +39,7 @@ app = FastAPI(lifespan=lifespan)
 register_exception_handlers(app)
 app.include_router(activities.router)
 app.include_router(parents.router)
+app.include_router(payments.router)
 app.include_router(registrations.router)
 app.add_middleware(
     CORSMiddleware,
