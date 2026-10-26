@@ -214,7 +214,7 @@ test('registering a child for a trip calls the API and closes the picker', async
 
   expect(createRegistration).toHaveBeenCalledWith(3, 1)
   expect(await screen.findByText('Awaiting payment')).toBeInTheDocument()
-  expect(screen.queryByText('Choose a child')).not.toBeInTheDocument()
+  expect(screen.queryByText('Select a child')).not.toBeInTheDocument()
   expect(listRegistrations).toHaveBeenCalledTimes(2)
   expect(screen.getByLabelText('Card number')).toBeInTheDocument()
 })

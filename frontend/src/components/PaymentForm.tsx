@@ -3,6 +3,10 @@ import { type CardInput, type Registration } from '../api/client'
 import { formatCost, formatExpiryInput } from '../format'
 import { describePaymentError, type PaymentErrorView } from '../paymentErrors'
 import { validateCardNumber, validateCvv, validateExpiry } from '../validation'
+import Alert from './Alert'
+import Button from './Button'
+import Card from './Card'
+import Field from './Field'
 
 type Field = keyof CardInput
 
@@ -82,7 +86,7 @@ export default function PaymentForm({
   }
 
   return (
-    <section className="mb-8 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+    <Card as="section" className="mb-8">
       <h2 className="text-lg font-semibold">
         Pay for {registration.activity.title}
       </h2>
@@ -94,82 +98,54 @@ export default function PaymentForm({
 
       <form onSubmit={submit} noValidate className="mt-4 space-y-4">
         {banner !== null && (
-          <div
-            role="alert"
-            className="rounded border border-red-200 bg-red-50 p-3 text-red-800"
-          >
+          <Alert>
             <p>{banner.message}</p>
             {banner.canRetry && (
-              <button
-                type="button"
-                className="mt-2 rounded border border-red-300 px-3 py-1 font-medium disabled:opacity-50"
+              <Button
+                size="sm"
+                className="mt-2"
                 disabled={pending}
                 onClick={() => void submitValues()}
               >
                 Retry
-              </button>
+              </Button>
             )}
-          </div>
+          </Alert>
         )}
         {fields.map(({ name, label, autoComplete }) => (
-          <div key={name}>
-            <label className="block text-sm font-medium" htmlFor={name}>
-              {label}
-            </label>
-            <input
-              id={name}
-              inputMode="numeric"
-              autoComplete={autoComplete}
-              className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
-              value={values[name]}
-              aria-invalid={Boolean(errors[name])}
-              aria-describedby={errors[name] ? `${name}-error` : undefined}
-              onChange={(e) => {
-                const value =
-                  name === 'expiry_date'
-                    ? formatExpiryInput(e.target.value, values[name])
-                    : e.target.value
-                setValues({ ...values, [name]: value })
-                // A backend error is about the old value; blur checks the new one.
-                setErrors({ ...errors, [name]: null })
-              }}
-              onBlur={() =>
-                setErrors({ ...errors, [name]: validators[name](values[name]) })
-              }
-            />
-            {errors[name] && (
-              <p id={`${name}-error`} className="mt-1 text-sm text-red-700">
-                {errors[name]}
-              </p>
-            )}
-          </div>
+          <Field
+            key={name}
+            id={name}
+            label={label}
+            error={errors[name]}
+            inputMode="numeric"
+            autoComplete={autoComplete}
+            value={values[name]}
+            onChange={(e) => {
+              const value =
+                name === 'expiry_date'
+                  ? formatExpiryInput(e.target.value, values[name])
+                  : e.target.value
+              setValues({ ...values, [name]: value })
+              // A backend error is about the old value; blur checks the new one.
+              setErrors({ ...errors, [name]: null })
+            }}
+            onBlur={() =>
+              setErrors({ ...errors, [name]: validators[name](values[name]) })
+            }
+          />
         ))}
         <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            type="submit"
-            disabled={pending}
-            className="flex w-full items-center justify-center gap-2 rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-60 sm:w-auto"
-          >
-            {pending && (
-              <span
-                aria-hidden="true"
-                className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent"
-              />
-            )}
+          <Button type="submit" variant="primary" loading={pending}>
             {pending
               ? 'Paying...'
               : `Pay ${formatCost(registration.activity.cost_cents)}`}
-          </button>
-          <button
-            type="button"
-            disabled={pending}
-            className="w-full rounded border border-gray-300 px-4 py-2 disabled:opacity-60 sm:w-auto"
-            onClick={onCancel}
-          >
+          </Button>
+          <Button disabled={pending} onClick={onCancel}>
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
-    </section>
+    </Card>
   )
 }

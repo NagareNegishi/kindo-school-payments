@@ -1,5 +1,6 @@
 import type { Registration } from '../api/client'
 import { formatCost, formatDate } from '../format'
+import Button from './Button'
 
 interface Props {
   registrations: Registration[]
@@ -49,21 +50,11 @@ export default function RegistrationList({
                 </p>
               </div>
               {paid ? (
-                <button
-                  type="button"
-                  className="w-full rounded border border-gray-300 bg-white px-4 py-2 font-medium sm:w-auto"
-                  onClick={() => onViewReceipt(reg)}
-                >
-                  View receipt
-                </button>
+                <Button onClick={() => onViewReceipt(reg)}>View receipt</Button>
               ) : (
-                <button
-                  type="button"
-                  className="w-full rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 sm:w-auto"
-                  onClick={() => onPay(reg)}
-                >
+                <Button variant="primary" onClick={() => onPay(reg)}>
                   Pay
-                </button>
+                </Button>
               )}
             </li>
           )

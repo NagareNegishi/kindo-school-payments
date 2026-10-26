@@ -10,18 +10,22 @@ import {
   listStudents,
   type Activity,
   type CardInput,
-  type Parent,
   type Receipt,
   type Registration,
   type Student,
 } from './api/client'
+import Alert from './components/Alert'
+import Button from './components/Button'
 import ChildPicker from './components/ChildPicker'
 import LoadError from './components/LoadError'
 import ParentSelect from './components/ParentSelect'
 import PaymentForm from './components/PaymentForm'
 import ReceiptView from './components/ReceiptView'
 import RegistrationList from './components/RegistrationList'
+import Spinner from './components/Spinner'
 import TripList from './components/TripList'
+import { useLoad } from './useLoad'
+import { useScrollIntoView } from './useScrollIntoView'
 
 interface ParentData {
   parentId: number
@@ -30,11 +34,13 @@ interface ParentData {
 }
 
 export default function App() {
-  const [trips, setTrips] = useState<Activity[] | null>(null)
-  const [failed, setFailed] = useState(false)
-  const [parents, setParents] = useState<Parent[]>([])
-  const [parentsFailed, setParentsFailed] = useState(false)
-  const [parentsAttempt, setParentsAttempt] = useState(0)
+  const { data: trips, failed } = useLoad(listActivities, 'trips')
+  const {
+    data: parentList,
+    failed: parentsFailed,
+    retry: retryParents,
+  } = useLoad(listParents, 'parents')
+  const parents = parentList ?? []
   // The parent whose students or registrations failed to load, if any.
   const [dataFailedFor, setDataFailedFor] = useState<number | null>(null)
   const [dataAttempt, setDataAttempt] = useState(0)
@@ -51,6 +57,9 @@ export default function App() {
   const [receiptFailed, setReceiptFailed] = useState(false)
 
   const data = loaded !== null && loaded.parentId === parentId ? loaded : null
+  // Bring the payment form, receipt and child picker into view when they open.
+  const detailRef = useScrollIntoView(payTarget ?? receipt)
+  const pickerRef = useScrollIntoView(registeringTripId, 'nearest')
 
   useEffect(() => {
     if (parentId === null) return
@@ -68,33 +77,20 @@ export default function App() {
     }
   }, [parentId, dataAttempt])
 
-  useEffect(() => {
-    listParents()
-      .then(setParents)
-      .catch((error: unknown) => {
-        console.error('Failed to load parents', error)
-        setParentsFailed(true)
-      })
-  }, [parentsAttempt])
-
-  function retryParents() {
-    setParentsFailed(false)
-    setParentsAttempt((n) => n + 1)
-  }
-
   function retryParentData() {
     setDataFailedFor(null)
     setDataAttempt((n) => n + 1)
   }
 
-  useEffect(() => {
-    listActivities()
-      .then(setTrips)
-      .catch((error: unknown) => {
-        console.error('Failed to load trips', error)
-        setFailed(true)
-      })
-  }, [])
+  /** Reloads the parent's registrations into `loaded`, keeping its other fields. */
+  async function refreshRegistrations(id: number) {
+    const registrations = await listRegistrations(id)
+    // Spread the latest state: a child may have been added just before this.
+    setLoaded((prev) =>
+      prev !== null && prev.parentId === id ? { ...prev, registrations } : prev,
+    )
+    return registrations
+  }
 
   function chooseParent(id: number | null) {
     setParentId(id)
@@ -116,18 +112,12 @@ export default function App() {
     if (payTarget === null || data === null) return
     const paid = await createPayment(payTarget.id, card)
     // The parent was switched while paying; their unpaid list reloads when picked again.
-    // The parent was switched while paying; their unpaid list reloads when picked again.
     if (parentIdRef.current !== data.parentId) return
     setReceipt(paid)
     setPayTarget(null)
     // The payment went through; a failed refresh must not read as a payment error.
     try {
-      const registrations = await listRegistrations(data.parentId)
-      setLoaded((prev) =>
-        prev !== null && prev.parentId === data.parentId
-          ? { ...prev, registrations }
-          : prev,
-      )
+      await refreshRegistrations(data.parentId)
     } catch (error) {
       console.error('Failed to refresh registrations', error)
     }
@@ -160,13 +150,7 @@ export default function App() {
   async function registerChild(student: Student, trip: Activity) {
     if (data === null) return
     const created = await createRegistration(student.id, trip.id)
-    const registrations = await listRegistrations(data.parentId)
-    // Spread the latest state: a child may have been added just before this.
-    setLoaded((prev) =>
-      prev !== null && prev.parentId === data.parentId
-        ? { ...prev, registrations }
-        : prev,
-    )
+    const registrations = await refreshRegistrations(data.parentId)
     setRegisteringTripId(null)
     openPayment(registrations.find((reg) => reg.id === created.id) ?? null)
   }
@@ -175,13 +159,13 @@ export default function App() {
     if (data === null) return null
     if (registeringTripId !== trip.id) {
       return (
-        <button
-          type="button"
-          className="mt-4 w-full rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 sm:w-auto"
+        <Button
+          variant="primary"
+          className="mt-4"
           onClick={() => setRegisteringTripId(trip.id)}
         >
           Register a child
-        </button>
+        </Button>
       )
     }
     const registeredIds = new Set(
@@ -190,13 +174,15 @@ export default function App() {
         .map((reg) => reg.student_id),
     )
     return (
-      <ChildPicker
-        students={data.students}
-        registeredIds={registeredIds}
-        onSelect={(student) => registerChild(student, trip)}
-        onAdd={addChild}
-        onCancel={() => setRegisteringTripId(null)}
-      />
+      <div ref={pickerRef}>
+        <ChildPicker
+          students={data.students}
+          registeredIds={registeredIds}
+          onSelect={(student) => registerChild(student, trip)}
+          onAdd={addChild}
+          onCancel={() => setRegisteringTripId(null)}
+        />
+      </div>
     )
   }
 
@@ -223,22 +209,24 @@ export default function App() {
             onRetry={retryParentData}
           />
         )}
-        {payTarget !== null && (
-          <PaymentForm
-            // Remount per registration so typed card details never carry over.
-            key={payTarget.id}
-            registration={payTarget}
-            onSubmit={pay}
-            onCancel={() => setPayTarget(null)}
-          />
-        )}
-        {receipt !== null && (
-          <ReceiptView receipt={receipt} onDone={() => setReceipt(null)} />
-        )}
+        <div ref={detailRef}>
+          {payTarget !== null && (
+            <PaymentForm
+              // Remount per registration so typed card details never carry over.
+              key={payTarget.id}
+              registration={payTarget}
+              onSubmit={pay}
+              onCancel={() => setPayTarget(null)}
+            />
+          )}
+          {receipt !== null && (
+            <ReceiptView receipt={receipt} onDone={() => setReceipt(null)} />
+          )}
+        </div>
         {receiptFailed && (
-          <p role="alert" className="mb-4 text-red-700">
+          <Alert className="mb-4">
             Could not load the receipt. Please try again.
-          </p>
+          </Alert>
         )}
         {data !== null && (
           <RegistrationList
@@ -249,11 +237,12 @@ export default function App() {
         )}
         <h2 className="mb-4 text-lg font-semibold">Upcoming trips</h2>
         {failed ? (
-          <p role="alert" className="text-red-700">
-            Could not load trips. Please refresh and try again.
-          </p>
+          <Alert>Could not load trips. Please refresh and try again.</Alert>
         ) : trips === null ? (
-          <p className="text-gray-600">Loading trips...</p>
+          <p className="flex items-center gap-2 text-gray-600">
+            <Spinner />
+            <span>Loading trips...</span>
+          </p>
         ) : (
           <TripList trips={trips} renderExtra={renderTripExtra} />
         )}

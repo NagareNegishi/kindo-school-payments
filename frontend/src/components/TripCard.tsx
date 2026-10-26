@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { Activity } from '../api/client'
 import { formatCost, formatDate } from '../format'
+import Card from './Card'
 
 interface Props {
   trip: Activity
@@ -10,7 +11,7 @@ interface Props {
 
 export default function TripCard({ trip, children }: Props) {
   return (
-    <article className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+    <Card as="article">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <h3 className="text-lg font-semibold">{trip.title}</h3>
         <p className="text-lg font-semibold sm:shrink-0">
@@ -33,6 +34,6 @@ export default function TripCard({ trip, children }: Props) {
         <p className="mt-3 text-sm text-gray-800">{trip.description}</p>
       )}
       {children}
-    </article>
+    </Card>
   )
 }

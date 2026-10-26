@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { ApiError, type Student } from '../api/client'
+import { focusRing } from '../focusRing'
 import { validateChildName } from '../validation'
+import Alert from './Alert'
+import Button from './Button'
+import Field from './Field'
 
 interface Props {
   students: Student[]
@@ -54,12 +58,8 @@ export default function ChildPicker({
 
   return (
     <div className="mt-4 space-y-4 border-t border-gray-200 pt-4">
-      <h4 className="font-medium">Choose a child</h4>
-      {banner && (
-        <p role="alert" className="text-sm text-red-700">
-          {banner}
-        </p>
-      )}
+      <h4 className="font-medium">Select a child</h4>
+      {banner && <Alert>{banner}</Alert>}
       {students.length === 0 ? (
         <p className="text-sm text-gray-600">No children added yet.</p>
       ) : (
@@ -71,7 +71,7 @@ export default function ChildPicker({
                 <button
                   type="button"
                   disabled={registered}
-                  className="flex w-full items-center justify-between rounded border border-gray-300 px-3 py-2 text-left hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+                  className={`flex w-full items-center justify-between rounded border border-gray-300 bg-white px-3 py-2 text-left transition-colors enabled:hover:bg-gray-100 enabled:active:bg-gray-200 ${focusRing} disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500`}
                   onClick={() => void run(() => onSelect(student))}
                 >
                   <span>{student.name}</span>
@@ -86,40 +86,22 @@ export default function ChildPicker({
       )}
 
       <form onSubmit={submit} noValidate className="space-y-2">
-        <label className="block text-sm font-medium" htmlFor="child-name">
-          Add a child
-        </label>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <input
-            id="child-name"
-            className="w-full rounded border border-gray-300 px-3 py-2"
-            value={name}
-            aria-invalid={nameError !== null}
-            aria-describedby={nameError ? 'child-name-error' : undefined}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={() => setNameError(validateChildName(name))}
-          />
-          <button
-            type="submit"
-            className="w-full rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 sm:w-auto"
-          >
-            Register
-          </button>
-        </div>
-        {nameError && (
-          <p id="child-name-error" className="text-sm text-red-700">
-            {nameError}
-          </p>
-        )}
+        <Field
+          id="child-name"
+          label="Add a new child"
+          error={nameError}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => setNameError(validateChildName(name))}
+          action={
+            <Button type="submit" variant="primary">
+              Register
+            </Button>
+          }
+        />
       </form>
 
-      <button
-        type="button"
-        className="text-sm text-gray-600 underline"
-        onClick={onCancel}
-      >
-        Cancel
-      </button>
+      <Button onClick={onCancel}>Cancel</Button>
     </div>
   )
 }
