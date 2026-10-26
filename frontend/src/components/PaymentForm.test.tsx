@@ -58,6 +58,14 @@ test('expiry gets its slash automatically and backspace removes it', async () =>
   expect(expiry).toHaveValue('12')
 })
 
+test('expiry typed as 1/12 becomes 01/12', async () => {
+  setup()
+  const expiry = screen.getByLabelText('Expiry (MM/YY)')
+
+  await userEvent.type(expiry, '1/12')
+  expect(expiry).toHaveValue('01/12')
+})
+
 test('shows the amount from the trip and has no amount input', () => {
   setup()
 

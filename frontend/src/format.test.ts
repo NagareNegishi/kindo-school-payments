@@ -10,6 +10,13 @@ test('formatExpiryInput adds the slash after the month and caps at 4 digits', ()
   expect(formatExpiryInput('ab1/2x', '')).toBe('12/')
 })
 
+test('formatExpiryInput zero-pads a single-digit month', () => {
+  expect(formatExpiryInput('1/', '1')).toBe('01/')
+  expect(formatExpiryInput('01/1', '01/')).toBe('01/1')
+  expect(formatExpiryInput('3', '')).toBe('03/')
+  expect(formatExpiryInput('0', '')).toBe('0')
+})
+
 test('formatExpiryInput lets backspace remove the slash', () => {
   expect(formatExpiryInput('12', '12/')).toBe('12')
   expect(formatExpiryInput('12/', '12/3')).toBe('12')
