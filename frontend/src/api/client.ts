@@ -19,6 +19,24 @@ export interface Parent {
   email: string
 }
 
+export interface Student {
+  id: number
+  name: string
+  school_id: number
+  parent_id: number
+}
+
+/** A registration with its child and trip; `status` is `registered` until paid. */
+export interface Registration {
+  id: number
+  student_id: number
+  activity_id: number
+  status: string
+  created_at: string
+  student: Student
+  activity: Activity
+}
+
 /** The backend's shared error shape: `{ code, message, field }`. */
 export class ApiError extends Error {
   readonly status: number
@@ -59,4 +77,8 @@ export function listActivities(): Promise<Activity[]> {
 
 export function listParents(): Promise<Parent[]> {
   return request<Parent[]>('/parents')
+}
+
+export function listRegistrations(parentId: number): Promise<Registration[]> {
+  return request<Registration[]>(`/parents/${parentId}/registrations`)
 }

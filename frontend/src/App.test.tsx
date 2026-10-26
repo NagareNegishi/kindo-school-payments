@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import App from './App'
 import * as client from './api/client'
@@ -58,6 +59,36 @@ test('the header dropdown lists the parents from the API', async () => {
   expect(
     await screen.findByRole('option', { name: 'Aroha Smith' }),
   ).toBeInTheDocument()
+})
+
+test('choosing a parent shows their unpaid registrations', async () => {
+  vi.spyOn(client, 'listActivities').mockResolvedValue([])
+  vi.spyOn(client, 'listParents').mockResolvedValue([
+    { id: 1, name: 'Aroha Smith', email: 'aroha@example.com' },
+  ])
+  const listRegistrations = vi
+    .spyOn(client, 'listRegistrations')
+    .mockResolvedValue([
+      {
+        id: 7,
+        student_id: 3,
+        activity_id: 1,
+        status: 'registered',
+        created_at: '2026-10-01T00:00:00Z',
+        student: { id: 3, name: 'Mia Smith', school_id: 1, parent_id: 1 },
+        activity: trip,
+      },
+    ])
+  render(<App />)
+
+  await screen.findByRole('option', { name: 'Aroha Smith' })
+  expect(screen.queryByText('Awaiting payment')).not.toBeInTheDocument()
+
+  await userEvent.selectOptions(screen.getByRole('combobox'), 'Aroha Smith')
+
+  expect(await screen.findByText('Awaiting payment')).toBeInTheDocument()
+  expect(screen.getByText(/Mia Smith/)).toBeInTheDocument()
+  expect(listRegistrations).toHaveBeenCalledWith(1)
 })
 
 test('shows an error and logs it when loading fails', async () => {

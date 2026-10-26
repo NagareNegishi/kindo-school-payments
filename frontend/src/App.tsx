@@ -2,17 +2,42 @@ import { useEffect, useState } from 'react'
 import {
   listActivities,
   listParents,
+  listRegistrations,
   type Activity,
   type Parent,
+  type Registration,
 } from './api/client'
 import ParentSelect from './components/ParentSelect'
 import TripList from './components/TripList'
+import UnpaidRegistrations from './components/UnpaidRegistrations'
 
 export default function App() {
   const [trips, setTrips] = useState<Activity[] | null>(null)
   const [failed, setFailed] = useState(false)
   const [parents, setParents] = useState<Parent[]>([])
   const [parentId, setParentId] = useState<number | null>(null)
+  // Tagged with its parent so a slow response never shows under another parent.
+  const [loaded, setLoaded] = useState<{
+    parentId: number
+    registrations: Registration[]
+  } | null>(null)
+  // Read by the payment form in the next step.
+  const [, setPayTarget] = useState<Registration | null>(null)
+
+  useEffect(() => {
+    if (parentId === null) return
+    let stale = false
+    listRegistrations(parentId)
+      .then((registrations) => {
+        if (!stale) setLoaded({ parentId, registrations })
+      })
+      .catch((error: unknown) => {
+        console.error('Failed to load registrations', error)
+      })
+    return () => {
+      stale = true
+    }
+  }, [parentId])
 
   useEffect(() => {
     listParents()
@@ -42,6 +67,12 @@ export default function App() {
         />
       </header>
       <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+        {loaded !== null && loaded.parentId === parentId && (
+          <UnpaidRegistrations
+            registrations={loaded.registrations}
+            onPay={setPayTarget}
+          />
+        )}
         <h2 className="mb-4 text-lg font-semibold">Upcoming trips</h2>
         {failed ? (
           <p role="alert" className="text-red-700">
