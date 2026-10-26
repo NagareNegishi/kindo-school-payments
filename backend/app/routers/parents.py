@@ -8,8 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.errors import api_error
-from app.models import Parent, School, Student
-from app.schemas.read import ParentOut, StudentOut
+from app.models import Activity, Parent, Registration, School, Student
+from app.schemas.read import ActivityOut, ParentOut, StudentOut
+from app.schemas.registration import RegistrationDetail
 from app.schemas.student import StudentCreate
 
 router = APIRouter(prefix="/parents", tags=["parents"])
@@ -39,6 +40,31 @@ async def list_students(parent_id: int, session: Session):
         select(Student).where(Student.parent_id == parent_id).order_by(Student.id)
     )
     return result.all()
+
+
+@router.get("/{parent_id}/registrations", response_model=list[RegistrationDetail])
+async def list_registrations(parent_id: int, session: Session):
+    """Registrations of the parent's children, past trips included."""
+    await _get_parent(session, parent_id)
+    rows = await session.execute(
+        select(Registration, Student, Activity)
+        .join(Student, Registration.student_id == Student.id)
+        .join(Activity, Registration.activity_id == Activity.id)
+        .where(Student.parent_id == parent_id)
+        .order_by(Activity.date, Registration.id)
+    )
+    return [
+        RegistrationDetail(
+            id=reg.id,
+            student_id=reg.student_id,
+            activity_id=reg.activity_id,
+            status=reg.status,
+            created_at=reg.created_at,
+            student=StudentOut.model_validate(student),
+            activity=ActivityOut.model_validate(activity),
+        )
+        for reg, student, activity in rows
+    ]
 
 
 @router.post("/{parent_id}/students", response_model=StudentOut, status_code=201)
