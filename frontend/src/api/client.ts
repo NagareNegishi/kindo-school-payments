@@ -38,6 +38,8 @@ export interface RegistrationBasic {
 export interface Registration extends RegistrationBasic {
   student: Student
   activity: Activity
+  /** The successful payment, to open its receipt; null until paid. */
+  payment_id: number | null
 }
 
 /** A finished payment: the data the receipt shows. */
@@ -141,6 +143,11 @@ export function createPayment(
     `/registrations/${registrationId}/payments`,
     jsonPost(card),
   )
+}
+
+/** Loads the receipt of a successful payment. */
+export function getPayment(paymentId: number): Promise<Receipt> {
+  return request<Receipt>(`/payments/${paymentId}`)
 }
 
 export function listRegistrations(parentId: number): Promise<Registration[]> {

@@ -15,6 +15,8 @@ def to_asyncpg_url(url: str) -> str:
 class Settings(BaseSettings):
     database_url: str
     frontend_origin: str = "http://localhost:5173"
+    # Turns on POST /demo/reset. Leave off in any deployed environment.
+    demo_reset_enabled: bool = False
 
     @field_validator("database_url")
     @classmethod

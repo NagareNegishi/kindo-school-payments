@@ -6,13 +6,14 @@ import ChildPicker from './ChildPicker'
 
 const mia: Student = { id: 1, name: 'Mia Smith', school_id: 1, parent_id: 1 }
 const leo: Student = { id: 2, name: 'Leo Smith', school_id: 1, parent_id: 1 }
+const ava: Student = { id: 3, name: 'Ava Smith', school_id: 1, parent_id: 1 }
 
 function setup(overrides: Partial<Parameters<typeof ChildPicker>[0]> = {}) {
   const props = {
     students: [mia, leo],
     registeredIds: new Set<number>(),
     onSelect: vi.fn().mockResolvedValue(undefined),
-    onAdd: vi.fn().mockResolvedValue(undefined),
+    onAdd: vi.fn().mockResolvedValue(ava),
     onCancel: vi.fn(),
     ...overrides,
   }
@@ -53,18 +54,38 @@ test('an empty name shows an error on blur and on submit, and is not sent', asyn
   await userEvent.tab()
   expect(screen.getByText(/enter the child's name/i)).toBeInTheDocument()
 
-  await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Register' }))
   expect(onAdd).not.toHaveBeenCalled()
 })
 
-test('adds a trimmed name and clears the field', async () => {
-  const { onAdd } = setup()
+test('adds a trimmed name, registers the new child and clears the field', async () => {
+  const { onAdd, onSelect } = setup()
   const input = screen.getByLabelText('Add a child')
 
   await userEvent.type(input, '  Ava Smith  ')
-  await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Register' }))
 
   expect(onAdd).toHaveBeenCalledWith('Ava Smith')
+  expect(onSelect).toHaveBeenCalledWith(ava)
+  expect(input).toHaveValue('')
+})
+
+test('a failed registration of a new child shows a banner and keeps them added', async () => {
+  const onSelect = vi
+    .fn()
+    .mockRejectedValue(
+      new ApiError(500, 'server_error', 'Could not register.', null),
+    )
+  const { onAdd } = setup({ onSelect })
+  const input = screen.getByLabelText('Add a child')
+
+  await userEvent.type(input, 'Ava Smith')
+  await userEvent.click(screen.getByRole('button', { name: 'Register' }))
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Could not register.',
+  )
+  expect(onAdd).toHaveBeenCalledTimes(1)
   expect(input).toHaveValue('')
 })
 
@@ -83,7 +104,7 @@ test('a backend name error shows under the name field and keeps the input', asyn
   const input = screen.getByLabelText('Add a child')
 
   await userEvent.type(input, 'Mia Smith')
-  await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Register' }))
 
   expect(await screen.findByText(/already have a child/i)).toBeInTheDocument()
   expect(input).toHaveValue('Mia Smith')

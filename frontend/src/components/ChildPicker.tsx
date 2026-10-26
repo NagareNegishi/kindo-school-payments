@@ -7,11 +7,11 @@ interface Props {
   /** Ids of children already registered for this trip. */
   registeredIds: Set<number>
   onSelect: (student: Student) => Promise<void>
-  onAdd: (name: string) => Promise<void>
+  onAdd: (name: string) => Promise<Student | undefined>
   onCancel: () => void
 }
 
-/** Pick one of the parent's children for a trip, or add a new child. */
+/** Pick one of the parent's children for a trip, or add a new child and register them. */
 export default function ChildPicker({
   students,
   registeredIds,
@@ -44,8 +44,11 @@ export default function ChildPicker({
     setNameError(error)
     if (error) return
     void run(async () => {
-      await onAdd(name.trim())
+      const student = await onAdd(name.trim())
+      if (!student) return
+      // The child now exists; if registering fails they can be picked from the list.
       setName('')
+      await onSelect(student)
     }, 'name')
   }
 
@@ -100,7 +103,7 @@ export default function ChildPicker({
             type="submit"
             className="w-full rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 sm:w-auto"
           >
-            Add
+            Register
           </button>
         </div>
         {nameError && (

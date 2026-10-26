@@ -10,6 +10,7 @@ const registration: Registration = {
   activity_id: 1,
   status: 'registered',
   created_at: '2026-01-01T00:00:00Z',
+  payment_id: null,
   student: { id: 1, name: 'Mia Smith', school_id: 1, parent_id: 1 },
   activity: {
     id: 1,
@@ -43,6 +44,28 @@ async function fillValid() {
   await userEvent.type(screen.getByLabelText('Expiry (MM/YY)'), '12/99')
   await userEvent.type(screen.getByLabelText('CVV'), '123')
 }
+
+test('expiry gets its slash automatically and backspace removes it', async () => {
+  setup()
+  const expiry = screen.getByLabelText('Expiry (MM/YY)')
+
+  await userEvent.type(expiry, '1230')
+  expect(expiry).toHaveValue('12/30')
+
+  await userEvent.clear(expiry)
+  await userEvent.type(expiry, '12')
+  expect(expiry).toHaveValue('12/')
+  await userEvent.type(expiry, '{Backspace}')
+  expect(expiry).toHaveValue('12')
+})
+
+test('expiry typed as 1/12 becomes 01/12', async () => {
+  setup()
+  const expiry = screen.getByLabelText('Expiry (MM/YY)')
+
+  await userEvent.type(expiry, '1/12')
+  expect(expiry).toHaveValue('01/12')
+})
 
 test('shows the amount from the trip and has no amount input', () => {
   setup()

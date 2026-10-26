@@ -27,6 +27,22 @@ export function formatCost(cents: number): string {
   return nzd.format(cents / 100)
 }
 
+/**
+ * Formats expiry input as the user types: keeps digits only (max 4) and adds the
+ * `/` after the month. A lone month digit is zero-padded when it can only be a
+ * single-digit month (2-9) or when the user types the `/` after it (`1/` -> `01/`).
+ * The `/` is not re-added while deleting, so backspace works.
+ */
+export function formatExpiryInput(value: string, previous: string): string {
+  const deleting = value.length < previous.length
+  const padded = /^\d\//.test(value) ? `0${value}` : value
+  const digits = padded.replace(/\D/g, '').slice(0, 4)
+  if (digits.length === 1 && !deleting && digits >= '2') return `0${digits}/`
+  if (digits.length > 2) return `${digits.slice(0, 2)}/${digits.slice(2)}`
+  if (digits.length === 2 && !deleting) return `${digits}/`
+  return digits
+}
+
 /** Formats a `YYYY-MM-DD` date. Parsed as a local date so the day never shifts by timezone. */
 export function formatDate(isoDate: string): string {
   const [year, month, day] = isoDate.split('-').map(Number)

@@ -31,6 +31,13 @@ async def _get_or_create[T: Base](
     return row
 
 
+async def reset_to_seed(session: AsyncSession) -> None:
+    """Empty every table, then seed again. Does not commit; the caller owns the transaction."""
+    for table in reversed(Base.metadata.sorted_tables):
+        await session.execute(table.delete())
+    await seed(session)
+
+
 async def seed(session: AsyncSession) -> None:
     """Insert any missing demo rows. Does not commit; the caller owns the transaction."""
     school = await _get_or_create(session, School, {"name": SCHOOL_NAME})
