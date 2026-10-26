@@ -15,7 +15,7 @@ lowest: 🤖 ai-audited
 | 5 | done | #2 |
 | 6 | done | #3 |
 | 7 | done | #3 |
-| 8 | planned | #3 |
+| 8 | done | #3 |
 | 9 | planned | #4 |
 | 10 | planned | #5 |
 
@@ -103,13 +103,13 @@ Backend first, then frontend, then docs and deploy, in the order of the Implemen
 ### Step 8: Add loading, error banners, retry and receipt
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
 
-- [ ] Submit disabled with a spinner while the payment runs.
-- [ ] Decline banner with the processor message and a retry button on the same form.
-- [ ] Network or server error banner with retry, form input kept.
-- [ ] Map backend field errors onto the matching input.
-- [ ] `console.error` for unexpected errors and a React error boundary fallback.
-- [ ] Receipt: transaction ID, amount, date, child, trip, card last 4.
-- [ ] Tests: submit disabled while pending; error mapped to the right field or banner.
+- [x] Submit disabled with a spinner while the payment runs.
+- [x] Decline banner with the processor message and a retry button on the same form.
+- [x] Network or server error banner with retry, form input kept.
+- [x] Map backend field errors onto the matching input.
+- [x] `console.error` for unexpected errors and a React error boundary fallback.
+- [x] Receipt: transaction ID, amount, date, child, trip, card last 4.
+- [x] Tests: submit disabled while pending; error mapped to the right field or banner.
 
 ### Step 9: Final pass on README and AI_WORKINGS
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
