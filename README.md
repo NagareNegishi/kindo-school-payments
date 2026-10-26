@@ -1,101 +1,143 @@
-# Project Seed
+# Kindo School Payments
 
-Template repository: a stack-agnostic dev container with a Claude Code sandbox
-behind an outbound firewall, plus portable skills, path-scoped rules, and
-reference docs. New projects start from this repo (GitHub → "Use this template").
+A parent registers a child for a school field trip and pays for it online. The backend is FastAPI on PostgreSQL, the frontend is React with Tailwind, and card payments go to a mock legacy processor through an adapter.
 
-## Layout
+How AI was used to build this, including where it went wrong: [AI_WORKINGS.md](AI_WORKINGS.md).
 
-- `.devcontainer/` — generic container: app service, firewall, Claude Code. Placeholders marked `<placeholder>`.
-- `.claude/` — permissions (`settings.json`), path-scoped rules example, portable skills.
-- `CONTEXT.md` + `context/` — skeleton for a per-project fast-orientation index (parts,
-  seams, invariants, direction), citation-per-line, pulled on demand rather than
-  auto-loaded. Fill in once the architecture settles — `CONTEXT.md` explains the
-  convention; delete both if the project stays small enough that CLAUDE.md covers it.
-- `docs/` — `progress.md` template, `plans/` convention, `reference/` concept docs,
-  `notes-system.md` (session-notes convention), `session/` (baton template for the
-  `session-start`/`session-end` skills; the filled `baton.md` is gitignored).
-  `reference/project-specific/` holds the seed author's own worked examples
-  (real domain, real AWS decisions) — read for ideas, don't carry into a new
-  project; delete it during instantiation if you don't want it.
-- `examples/stack/<stack>/` — real files from working projects; the stack-specific pieces the seed leaves out.
-- `examples/cicd/` — real GitHub Actions pipelines (test gates, deploy, dependency updates) from working projects.
-- `reusables/` — portable React/TypeScript pieces carried between projects: `component/` (app components), `shadcn/` (shadcn/ui primitives), `util/` (helpers and hooks). Copy what a new project needs; not wired into any build.
+## What it does
 
-## Instantiation checklist
+1. The parent picks themselves from a dropdown in the header. There is no login, so the dropdown stands in for one.
+2. The page lists upcoming trips (title, date, location, cost, description). Above the list are that parent's unpaid registrations, past trips included, each with a Pay button.
+3. "Register a child" on a trip lets the parent pick one of their children or add a new one. Children already registered for that trip are marked and cannot be picked.
+4. The payment form takes card number, expiry and CVV. The amount is shown and cannot be edited. Each field is checked on blur and on submit.
+5. While the payment runs (about 1.5 seconds) the button is disabled and shows a spinner.
+   - A decline shows the processor's message and a Retry button on the same form.
+   - A network or server error shows a banner with Retry and keeps what was typed.
+   - An error the backend ties to a field appears on that field.
+6. A successful payment shows a receipt: transaction ID, amount, date, child, trip and the last four card digits.
 
-1. Create a repo from this template and open it locally.
-2. Pick a stack from `examples/stack/` and merge its files over the `<placeholder>` markers (its README says what goes where): Dockerfile base image + packages, compose services/volumes, devcontainer ports/mounts/env/postCreate, firewall stack domains. Then delete the `examples/` entries you didn't use.
-3. Create `.devcontainer/.env` from `.env.example` and fill the values.
-4. Fill `CLAUDE.md` (skeleton at repo root) and `.claude/rules/` paths.
-   Review `LICENSE` — the seed ships MIT under the seed author's name; replace or
-   delete it if this project is closed-source or licensed differently.
-5. Open in the dev container ("Reopen in Container"). The firewall runs on every start; only allowlisted domains are reachable.
-6. Set up GitHub for the repo (one-time) — see "GitHub issue & PR skills" below:
-   authenticate `gh`, run `/label-setup`, and protect the default branch with
-   `scripts/protect-main.sh`. The publish and label skills stop until `gh` is
-   authenticated.
-7. After the first feature, start updating `docs/progress.md`. Once the architecture
-   has settled, fill in `CONTEXT.md` + `context/` (or delete both if the project
-   stays small enough that CLAUDE.md covers orientation on its own).
+## Setup
 
-## Claude credentials volume
+You need Docker and VS Code with the Dev Containers extension. The container has Python 3.14, uv, Node, and a Postgres 14.3 service. Ports 8000, 5173 and 5432 are forwarded.
 
-`docker-compose.yml` mounts a volume with the fixed name `claude-credentials`:
-every project built from this seed shares one Claude login/config. Log in once
-in any of them; delete the volume to reset.
+1. Create `.devcontainer/.env` (gitignored) with `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB=kindo`. The container builds `DATABASE_URL` from them.
+2. Open the folder in VS Code and choose "Reopen in Container".
+3. Start the backend. On start it runs the migrations and the seed.
 
-## Firewall
+   ```bash
+   cd backend
+   uv sync
+   uv run fastapi dev        # http://localhost:8000
+   ```
 
-`.devcontainer/project-firewall.sh` allows GitHub (dynamic IP ranges),
-`api.anthropic.com`, `registry.npmjs.org`, and `api.osv.dev` (owasp-* skills).
-Add stack domains at the marked insertion point — examples ship ready-made blocks.
+4. Start the frontend in a second terminal.
 
-## GitHub issue & PR skills
+   ```bash
+   cd frontend
+   npm install
+   npm run dev               # http://localhost:5173
+   ```
 
-The seed ships paired skills for drafting and publishing GitHub issues and PRs:
-`github-issue-creator` + `issue-publish`, `pr-draft` + `pr-publish`, and
-`label-setup`. Three one-time steps per project before first use:
+5. Open http://localhost:5173 and pick a parent.
 
-1. Authenticate `gh` yourself with `gh auth login`. No skill runs it, and the
-   publish and label skills stop with a reminder if `gh` isn't authenticated.
-2. Run `/label-setup` once. It creates the preset labels from
-   `.claude/skills/label-setup/labels.yml` in the repo. Publishing a draft that
-   names a label the repo lacks stops, because the publish skills never create
-   labels. Edit `labels.yml` first if you want a different set.
-3. Run `scripts/protect-main.sh` once to protect the default branch: require a
-   PR to merge, block force-push and deletion. It shows the plan and asks before
-   applying (`-y` skips the prompt); re-running updates the same ruleset. Needs
-   admin on the repo. Required status checks are off by default — flip on
-   `REQUIRED_CHECKS` in the script once this project has CI.
+If an install is rejected, the container firewall has stale addresses. Rerun `sudo /usr/local/bin/project-firewall.sh`.
 
-Then the flow is draft (`/pr-draft` or `/github-issue-creator`), review the file,
-publish (`/pr-publish` or `/issue-publish`). Design notes:
-`docs/skills/pr-issue-publish.md`.
+### Tests and checks
 
-## Build orchestration
+```bash
+cd backend
+uv run pytest
+uv run ruff check . && uv run ruff format --check .
 
-`build-orchestration` runs a feature build as a multi-agent session. The main Claude
-session acts as manager: it cuts the feature into units and spawns implementer,
-tester, and adviser subagents to build, test, and review the work to completion, with
-guardrails that keep it from thrashing on a unit that won't pass. Run it with
-`/build-orchestration`; it never starts on its own.
+cd frontend
+npm test
+npm run lint && npx prettier --check .
+npm run build
+```
 
-It drives the subagent fleet in `.claude/agents/` (catalog in
-[`docs/agents/README.md`](docs/agents/README.md)) and needs a feature plan under
-`docs/plans/<feature>/` to build from. Design notes:
-[`docs/skills/build-orchestration-design-notes.md`](docs/skills/build-orchestration-design-notes.md).
+The backend tests use the same database as the app. Each test runs inside a transaction that is rolled back, so the data you see in the app is left alone. One test (`test_startup`) runs the real start-up, which is safe because the seed only adds what is missing.
 
-## Claude attribution
+### Configuration
 
-Claude must never appear as a contributor in projects built from this seed. The
-seed ships three layers, and all of them carry over on instantiation — keep them:
+| Variable | Used by | Default |
+| --- | --- | --- |
+| `DATABASE_URL` | backend | none; the backend will not start without it. A plain `postgresql://` URL is converted to the asyncpg form. |
+| `FRONTEND_ORIGIN` | backend (CORS) | `http://localhost:5173` |
+| `VITE_API_URL` | frontend, read at build time | `http://localhost:8000` |
 
-1. `.claude/settings.json` sets `attribution.commit` to `""`, so Claude Code
-   does not generate the `Co-Authored-By` trailer.
-2. `CLAUDE.md` states the rule (top block, "Attribution").
-3. A PreToolUse hook (`.claude/hooks/coauthor-guard.sh`) blocks any command
-   carrying a co-author trailer or the Claude author identity, as a backstop
-   for the known cases where the setting alone fails.
+### Seed data
 
-Policy and verification: `docs/permissions/v3-no-coauthor.md`.
+On start the backend adds, only if missing: one school, one trip ("Zoo Trip", $45.00, Auckland Zoo, dated 30 days after the first start), and three parents. Aroha Smith has two children (Mia, Liam), Tom Wilson has one (Ella), and Priya Patel has none.
+
+## How it is built
+
+**Backend** (`backend/app/`): `routers/` for the endpoints, `schemas/` for request and response models, `models/` for the tables, `services/` for the payment flow and receipt lookup, `legacy/` for the processor and its adapter, plus `db.py`, `config.py`, `errors.py` and `logging_config.py`. Schema changes go through Alembic.
+
+**Frontend** (`frontend/src/`): one page in `App.tsx` with small components for each step. `api/client.ts` is the only code that calls `fetch`. Validation functions are in `validation.ts` and match the backend rules.
+
+### Endpoints
+
+| Method | Path | Result |
+| --- | --- | --- |
+| GET | `/activities` | upcoming trips |
+| GET | `/activities/{id}` | one trip, 404 if missing |
+| GET | `/parents` | the seeded parents |
+| GET, POST | `/parents/{id}/students` | a parent's children; add one |
+| GET | `/parents/{id}/registrations` | the parent's registrations with status, past trips included |
+| POST | `/registrations` | register a child. 409 if already registered or the trip is past |
+| POST | `/registrations/{id}/payments` | pay. 201 paid, 402 declined, 409 already paid or in progress, 422 invalid |
+| GET | `/payments/{id}` | receipt for a successful payment, 404 otherwise |
+
+Every error has the same shape: `{ "code", "message", "field" }`. Each one is also logged to stdout.
+
+### Payment flow
+
+1. Validate the request body.
+2. Mark any `pending` attempt on the registration that is older than 60 seconds as `failed`.
+3. Reject with 409 if the registration is already paid or has a `pending` attempt.
+4. Save a `pending` attempt (amount copied from the trip, last four digits only) and commit.
+5. Call the legacy processor through the adapter, off the event loop.
+6. On approval, mark the attempt `success` and the registration `paid` in one commit. On a decline, or if the processor throws, mark the attempt `failed` and return 402 so the parent can retry.
+
+## Assumptions
+
+- No login. Anyone can pick any parent. Each parent sees only their own children.
+- Currency is NZD.
+- The legacy processor is a mock. No real card is charged, and no real card data should be entered.
+- There is one school. A child added in the app goes to the lowest-numbered school.
+- Registering and paying are separate steps. An unpaid registration stays open with no expiry.
+
+## Design decisions
+
+- **Money is integer cents.** The adapter turns it into a `float` only for the legacy call, which rejects `Decimal`.
+- **The server sets the amount.** It comes from the trip. A request that includes an `amount` is rejected.
+- **No card data at rest or in logs.** Only the last four digits are stored. Card number, expiry and CVV are never logged, and validation errors do not echo them back.
+- **Payment attempts are their own table.** One registration can have many attempts, so a decline can be retried. A partial unique index allows only one `pending` or `success` attempt per registration, which blocks a double payment even when two requests arrive together.
+- **A stuck attempt recovers.** A `pending` attempt older than 60 seconds is marked `failed` the next time that registration is paid.
+- **Attempt and registration change together.** `success` and `paid` are set in one commit, so they cannot disagree.
+- **A late payment is allowed.** Registering for a past trip is rejected, but a parent can still pay for a registration they already made.
+- **The backend is the authority on validation.** The frontend repeats the same rules for fast feedback.
+- **A processor crash is treated like a decline.** The attempt is stored as `failed` and the parent sees a retryable message instead of a 500.
+- **A receipt exists only for a success.** `GET /payments/{id}` returns 404 for a failed or pending attempt.
+- **The seed adds only what is missing.** It runs on every start without duplicating rows.
+
+## Known limits
+
+- The trip date is set once, 30 days after the first start. A database kept longer than that no longer has an upcoming trip.
+- If two payments for the same registration arrive together, the second gets "payment in progress" (409) even if the first has already finished. Nobody is charged twice.
+- If the processor approves a payment and the database commit then fails, the attempt stays `pending` and is later marked `failed` with no transaction ID. There is no reconciliation. With the mock processor this cannot be reached in practice.
+- Not deployed yet. The Render deploy is the last build step.
+
+## Repository layout
+
+- `backend/`, `frontend/`: the app.
+- `docs/kindo-payments/`: the brief, the implementation plan and the legacy processor source.
+- `docs/progress.md`: where the build stands and the decisions made on the way.
+- `build-orchestration/`: prompt and build logs from the build sessions.
+- `.claude/` and `CLAUDE.md`: the rules, hooks and skills used with Claude Code.
+- `.devcontainer/`: the dev container and its firewall.
+- `reusables/`, `examples/`: pieces left over from the project template. Not part of any build.
+
+### Dev container notes
+
+`docker-compose.yml` mounts a volume named `claude-credentials`, so Claude Code logins are shared by projects built from the same template. The firewall allows only GitHub, `api.anthropic.com`, npm, PyPI, `api.osv.dev`, `ui.shadcn.com` and the VS Code marketplace.

@@ -1,6 +1,3 @@
-<!-- Template skeleton. Replace every <placeholder>.
-     Delete sections that do not apply. -->
-
 **Skill work**: before polishing or adding a skill in `.claude/skills/`, read
 `docs/skills/new-skills.md` (authoring and polish guide).
 
@@ -35,17 +32,25 @@ Promote to CLAUDE.md or a skill only with user review. Mechanism: `docs/notes-sy
 
 ## Project Overview
 
-<One paragraph: what the app does.>
+Kindo school payments: a parent picks a seeded demo parent, views an upcoming school
+trip, registers a child, pays through an online form, and gets a receipt. Payments go
+to a mock legacy processor (`LegacyPaymentProcessor`) behind an adapter. Take-home
+challenge, 2-4 hour budget; the plan is `docs/kindo-payments/`.
 
-- **Backend**: <framework + version> (`<backend-dir>/`)
-- **Frontend**: <framework + version> (`<frontend-dir>/`)
-- **Database**: <database + access layer>
-- **Test project**: <test framework> (`<test-dir>/`)
+- **Backend**: Python 3.14 + FastAPI (`backend/`), managed with uv
+- **Frontend**: React + Vite + Tailwind (`frontend/`)
+- **Database**: PostgreSQL 14.3, SQLAlchemy async + asyncpg, Alembic migrations
+- **Tests**: pytest (`backend/`), Vitest + React Testing Library (`frontend/`)
 
 The dev environment runs in a Dev Container (`.devcontainer/`).
 
 ## Docs
 
+- `docs/kindo-payments/Kindo School Payments – Implementation Plan.md` - the
+  source of truth for scope, data model, API, validation, tests, and build order.
+  Read it before any task. `Tech_Challenge.md` is the original brief;
+  `legacy_payment.py` is the processor. On any conflict between the
+  Implementation Plan and `Tech_Challenge.md`, the Implementation Plan wins.
 - `CONTEXT.md` + `context/` — fast-orientation index (parts, seams, invariants,
   direction), citation-per-line, pulled on demand. Not a source of truth — see
   `CONTEXT.md` for the convention and which file to read per task.
@@ -61,60 +66,83 @@ and hooks). Check here before writing a new component or util; not part of any b
 
 ## Commands
 
-### Backend (from `<backend-dir>/`)
+Planned; `backend/` and `frontend/` are not scaffolded yet. Update on scaffold.
+
+### Backend (from `backend/`)
 
 ```bash
-<run command>
+uv sync
+uv run fastapi dev          # http://localhost:8000
+uv run alembic upgrade head
+uv run ruff check . && uv run ruff format --check .
 ```
 
-### Tests (from repo root or `<test-dir>/`)
+### Tests
 
 ```bash
-<test command>
-<single-test filter command>
+cd backend && uv run pytest
+cd backend && uv run pytest -k <name>
+cd frontend && npm test
 ```
 
-### Frontend (from `<frontend-dir>/`)
+### Frontend (from `frontend/`)
 
 ```bash
-<dev server command>    # <dev URL>
-<build command>
+npm run dev                 # http://localhost:5173
+npm run build
+npm run lint && npx prettier --check .
 ```
 
 ## Configuration
 
 ### Backend
 
-<Config file or env vars. One line per key: name — what it does, whether the app
-fails fast without it.>
+- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` (`kindo`) - set in `.devcontainer/.env` (gitignored); compose creates the database from them.
+- `DATABASE_URL` - built in the container shell from the `POSTGRES_*` vars (`postgresql+asyncpg://...@db:5432/...`). `config.py` also converts a plain `postgresql://` URL (Render) to the asyncpg form.
+- Frontend origin for CORS - set in `config.py`.
 
 ### Frontend
 
-<Env vars, e.g. API base URL and which file sets it.>
+- `VITE_API_URL` - backend base URL, read at build time.
 
 ## Architecture
 
 ### Backend
 
-<One line per layer: where controllers/routes live, how data access works, which
-concerns go through service abstractions. List models/DTOs only if their shape is
-not obvious from the code.>
+`routers/` (HTTP) -> `services/` (payment service) -> `models/` (SQLAlchemy); `schemas/`
+(Pydantic), `legacy/` (processor + adapter), `db.py`, `config.py`. Migrations and an
+idempotent seed run on start. Every error returns `{ code, message, field }`.
 
 ### Frontend
 
-<Data flow in one line, e.g. pages → hooks → services → API. Routing table.
-Path aliases.>
+One page: header (parent dropdown) -> trip list -> child picker -> payment form ->
+receipt. API calls go through one client module.
 
 ### Tests
 
-<How tests are isolated (in-memory DB, mocks), anything a new test must set up.>
+Backend tests patch `random` and `time.sleep` in the legacy processor. Each test file
+ships in the same commit as the code it covers. No layout or visual tests.
 
 ## Skills
 
 - When writing or editing code: follow: `.claude/skills/code-commenting/SKILL.md`
 - When committing: follow `.claude/skills/git-commit/SKILL.md` — Conventional
   Commits, atomic commits, `feat`/`fix` need an issue ref.
-<other skill pointers>
+- When writing or editing code: also follow `.claude/skills/code-discipline/SKILL.md`.
+- When touching payments, validation, or error handling: follow `.claude/skills/owasp-guard/SKILL.md`.
+
+## Project rules
+
+From the implementation plan.
+
+- Read the plan before any task. Do not add features outside it.
+- Do not edit the `LegacyPaymentProcessor` code. Call it only through the adapter.
+- One small task per prompt. Commit after each working step.
+- Never log or store the full card number, expiry, or CVV. Store `card_last4` only.
+- Write tests with the code they cover, in the same commit. Run tests, ruff (backend),
+  and ESLint + Prettier (frontend) before declaring a task done.
+- Keep notes for `AI_WORKINGS.md` as you build: key prompts, each case where output was
+  wrong (how caught, the fix), and code written or rewritten by hand and why.
 
 ## Non-negotiable rules
 
@@ -126,7 +154,9 @@ Path aliases.>
 
 - No AI-clichéd wording, anywhere - write like a person would.
 
-- Never write or edit outside `/workspaces/<root>` (scratchpad excepted).
+- Never write or edit outside `/workspaces/kindo-school-payments` (scratchpad excepted).
+
+- Write and change files only with the Write and Edit tools, never through Bash (heredocs, `cp`, `sed -i`, redirects), so the user can review each change.
 
 ## Response style
 

@@ -1,5 +1,8 @@
 # Local environment — never commit real values; the pattern lives in .env.example
 .devcontainer/.env
+# App env files in backend/ and frontend/; the .env.example files stay tracked
+.env
+!.env.example
 
 # Claude session notes — local observation list; promoted to CLAUDE.md or a
 # skill only after user review, never committed

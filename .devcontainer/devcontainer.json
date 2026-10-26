@@ -1,40 +1,48 @@
-// Generic dev container: app service + Claude Code sandbox behind an outbound firewall.
-// Replace every <placeholder>. Real stack values live in examples/<stack>/.
-// For format details, see https://aka.ms/devcontainer.json
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/dotnet-postgres
 {
-	"name": "<project-name>",
-	"dockerComposeFile": "docker-compose.yml",
-	"service": "app",
+    "name": "kindo",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "app",
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {
-		// Node.js for frontend tooling and Claude Code
-		"ghcr.io/devcontainers/features/node:1": {},
+		// Node.js for frontend
+		"ghcr.io/devcontainers/features/node:2": {},
 		// Claude Code
 		"ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
 		// GitHub CLI
 		"ghcr.io/devcontainers/features/github-cli:1": {}
 	},
 
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// "features": {},
+
 	// Configure tool-specific properties.
 	// VS code specific properties: https://containers.dev/supporting#visual-studio-code
 	"customizations": {
 		"vscode": {
-			// <placeholder> stack extensions, e.g. "ms-dotnettools.csdevkit"
-			"extensions": []
+			"extensions": [
+				"ms-python.python"
+			]
 		}
 	},
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// <placeholder> backend, frontend, db ports
-	"forwardPorts": [],
 
-	"mounts": [
-		// Fixed volume name shared by every project built from the seed:
-		// one Claude login/config for all of them. Documented in the seed README.
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// backend, frontend, postgres
+	"forwardPorts": [8000, 5173, 5432],
+	// "portsAttributes": {
+	//		"5001": {
+	//			"protocol": "https"
+	//		}
+	// }
+
+    "mounts": [
+		// Keep frontend node_modules off the slow Windows bind mount (VS Code "Improve disk performance")
+		"source=frontend-node-modules,target=${containerWorkspaceFolder}/frontend/node_modules,type=volume",
+		// Mount a volume for Claude credentials
 		"source=claude-credentials,target=/home/vscode/.claude,type=volume"
-		// <placeholder> stack mounts, e.g. a dev-cert volume (see examples/)
-	],
+    ],
 
 	// Use 'containerEnv' to set environment variables in the container. (for all processes, set during container build)
 	"containerEnv": {
@@ -42,32 +50,96 @@
 		"NODE_OPTIONS": "--max-old-space-size=4096",
 		// Tell Claude Code where to find its config
 		"CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
-		// <placeholder> e.g. Pacific/Auckland
-		"TZ": "Etc/UTC"
+		"TZ": "Pacific/Auckland"
 	},
 
-	// Use 'remoteEnv' to set environment variables in the container. (for VS Code remote session)
-	// <placeholder> stack remoteEnv if needed, e.g. dev-cert path/password (see examples/)
-
-	// Use 'postCreateCommand' to run commands after the container is created.
+    // Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": {
-		// Set up Claude onboarding state, skip the onboarding process
-		"claude-onboarding": "echo '{\"hasCompletedOnboarding\":true}' > /home/vscode/.claude/.claude.json"
-		// <placeholder> dependency restore/install commands per stack (see examples/)
+	// Install Python dependencies; skipped until backend/pyproject.toml exists, because a failing step stops the later ones
+    "backend": "cd backend && if [ -f pyproject.toml ]; then uv sync; fi",
+    // Install frontend dependencies
+    // New named volumes are root-owned, so hand node_modules to vscode before installing
+    "frontend": "cd frontend && sudo chown vscode:vscode node_modules && if [ -f package.json ]; then npm install; fi",
+	// Set up Claude onboarding state, skip the onboarding process
+	"claude-onboarding": "echo '{\"hasCompletedOnboarding\":true}' > /home/vscode/.claude/.claude.json",
+	// Sources .env vars then builds DATABASE_URL (asyncpg URL read by the backend and Alembic)
+	// from the POSTGRES_* vars, so .env has no duplicate connection-string key
+	"shell-env": "echo 'set -a; source ${containerWorkspaceFolder}/.devcontainer/.env; set +a; export DATABASE_URL=\"postgresql+asyncpg://$POSTGRES_USER:$POSTGRES_PASSWORD@db:5432/$POSTGRES_DB\"' >> ~/.bashrc"
 	},
 
 	// Executes the firewall script every time the container starts
 	// and tells git "I trust this directory": https://www.kenmuse.com/blog/avoiding-dubious-ownership-in-dev-containers/
 	"postStartCommand": "sudo /usr/local/bin/project-firewall.sh && git config --global --add safe.directory ${containerWorkspaceFolder}",
-
+	
 	// Wait for the firewall to be set up
 	"waitFor": "postStartCommand"
+
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
 }
 
-// Reference: claude-code example devcontainer configuration:
+
+// claude-code example devcontainer configuration:
 // https://github.com/anthropics/claude-code/blob/main/.devcontainer/devcontainer.json
-// Its firewall grants NET_ADMIN/NET_RAW via "runArgs", which does not work with a
-// docker compose setup — that's why cap_add lives in docker-compose.yml here.
+//
+// {
+//   "name": "Claude Code Sandbox",
+
+	// only required if you need Dockerfile
+//   "build": {
+//     "dockerfile": "Dockerfile",
+//     "args": {
+//       "TZ": "${localEnv:TZ:America/Los_Angeles}",
+//       "CLAUDE_CODE_VERSION": "latest",
+//       "GIT_DELTA_VERSION": "0.18.2",
+//       "ZSH_IN_DOCKER_VERSION": "1.2.0"
+//     }
+//   },
+	// for firewall, but dont work with docker compose setup
+//   "runArgs": [
+//     "--cap-add=NET_ADMIN",
+//     "--cap-add=NET_RAW"
+//   ],
+//   "customizations": {
+//     "vscode": {
+//       "extensions": [
+//         "anthropic.claude-code",
+//         "dbaeumer.vscode-eslint",
+//         "esbenp.prettier-vscode",
+//         "eamodio.gitlens"
+//       ],
+//       "settings": {
+//         "editor.formatOnSave": true,
+//         "editor.defaultFormatter": "esbenp.prettier-vscode",
+//         "editor.codeActionsOnSave": {
+//           "source.fixAll.eslint": "explicit"
+//         },
+//         "terminal.integrated.defaultProfile.linux": "zsh",
+//         "terminal.integrated.profiles.linux": {
+//           "bash": {
+//             "path": "bash",
+//             "icon": "terminal-bash"
+//           },
+//           "zsh": {
+//             "path": "zsh"
+//           }
+//         }
+//       }
+//     }
+//   },
+//   "remoteUser": "node",
+//   "mounts": [
+//     "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
+//     "source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume"
+//   ],
+//   "containerEnv": {
+//     "NODE_OPTIONS": "--max-old-space-size=4096",
+//     "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+//     "POWERLEVEL9K_DISABLE_GITSTATUS": "true"
+//   },
+//   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+//   "workspaceFolder": "/workspace",
+//   "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+//   "waitFor": "postStartCommand"
+// }

@@ -65,23 +65,29 @@ done < <(echo "$gh_ranges" | jq -r '(.web + .api + .git)[]' | aggregate -q)
 
 
 # Resolve and add other allowed domains
-# api.anthropic.com — essential for Claude Code to function
 # registry.npmjs.org — essential for npm installs
+# api.anthropic.com — essential for Claude Code to function
 # api.osv.dev — vulnerability database, used by the owasp-* skills
-#
-# <placeholder> Add stack domains below, one per line ending in \
-# (e.g. NuGet, VS Code marketplace — see examples/<stack>/ for a ready-made block)
+# pypi.org / files.pythonhosted.org - uv sync and uv add (the only hosts uv contacted for a PyPI-only install)
+# 3 VS Code domains are for extension marketplace access
+# developer.chrome.com is NOT allowed: Google front-end IPs rotate and can't be allowlisted narrowly; use the browser relay
 for domain in \
-    "api.anthropic.com" \
     "registry.npmjs.org" \
-    "api.osv.dev"; do
+    "api.anthropic.com" \
+    "api.osv.dev" \
+    "ui.shadcn.com" \
+    "pypi.org" \
+    "files.pythonhosted.org" \
+    "marketplace.visualstudio.com" \
+    "vscode.blob.core.windows.net" \
+    "update.code.visualstudio.com"; do
     echo "Resolving $domain..."
     ips=$(dig +noall +answer A "$domain" | awk '$4 == "A" {print $5}')
     if [ -z "$ips" ]; then
         echo "ERROR: Failed to resolve $domain"
         exit 1
     fi
-
+    
     while read -r ip; do
         if [[ ! "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
             echo "ERROR: Invalid IP from DNS for $domain: $ip"
