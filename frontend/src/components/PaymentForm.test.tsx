@@ -196,6 +196,27 @@ test('a backend field error is shown on that input, not in a banner', async () =
   expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 })
 
+test('a backend field error clears when that input is edited', async () => {
+  setup(
+    vi
+      .fn()
+      .mockRejectedValue(
+        new ApiError(422, 'card_expired', 'Card has expired.', 'expiry_date'),
+      ),
+  )
+  await fillValid()
+  await userEvent.click(screen.getByRole('button', { name: /^Pay/ }))
+  await screen.findByText('Card has expired.')
+
+  await userEvent.type(screen.getByLabelText('Expiry (MM/YY)'), '0')
+
+  expect(screen.queryByText('Card has expired.')).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Expiry (MM/YY)')).toHaveAttribute(
+    'aria-invalid',
+    'false',
+  )
+})
+
 test('a conflict shows its message without a retry button', async () => {
   setup(
     vi

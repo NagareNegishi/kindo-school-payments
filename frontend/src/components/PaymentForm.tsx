@@ -119,7 +119,11 @@ export default function PaymentForm({
               value={values[name]}
               aria-invalid={Boolean(errors[name])}
               aria-describedby={errors[name] ? `${name}-error` : undefined}
-              onChange={(e) => setValues({ ...values, [name]: e.target.value })}
+              onChange={(e) => {
+                setValues({ ...values, [name]: e.target.value })
+                // A backend error is about the old value; blur checks the new one.
+                setErrors({ ...errors, [name]: null })
+              }}
               onBlur={() =>
                 setErrors({ ...errors, [name]: validators[name](values[name]) })
               }
