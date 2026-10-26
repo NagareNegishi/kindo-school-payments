@@ -154,13 +154,19 @@ export default function App() {
     if (data === null) return
     const student = await createStudent(data.parentId, name)
     setLoaded({ ...data, students: [...data.students, student] })
+    return student
   }
 
   async function registerChild(student: Student, trip: Activity) {
     if (data === null) return
     const created = await createRegistration(student.id, trip.id)
     const registrations = await listRegistrations(data.parentId)
-    setLoaded({ ...data, registrations })
+    // Spread the latest state: a child may have been added just before this.
+    setLoaded((prev) =>
+      prev !== null && prev.parentId === data.parentId
+        ? { ...prev, registrations }
+        : prev,
+    )
     setRegisteringTripId(null)
     openPayment(registrations.find((reg) => reg.id === created.id) ?? null)
   }
