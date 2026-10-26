@@ -8,7 +8,7 @@ lowest: 🤖 ai-audited
 
 | Step | State | Note |
 |---|---|---|
-| 1 | planned | #1 |
+| 1 | done | #1 |
 | 2 | planned | #2 |
 | 3 | planned | #2 |
 | 4 | planned | #2 |
@@ -32,15 +32,15 @@ Backend first, then frontend, then docs and deploy, in the order of the Implemen
 ### Step 1: Set up the environment and repo skeleton
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (not checked)
 
-- [ ] Set `POSTGRES_DB=kindo` in `.devcontainer/.env`.
-- [ ] Add `.devcontainer/.env` to `.gitignore`.
-- [ ] Remove `version` from `docker-compose.yml`.
-- [ ] Rebuild the dev container; check Postgres is reachable through `DATABASE_URL`, `uv` runs, and PyPI and npm installs work (if rejected, rerun `sudo /usr/local/bin/project-firewall.sh`).
-- [ ] Create `backend/` with `uv`, ruff and pytest; an empty test run passes.
-- [ ] Initialise Alembic with no migrations.
-- [ ] Create `frontend/` with Vite, React, Tailwind, ESLint, Prettier and Vitest; an empty test run passes.
-- [ ] Add `.env.example` files for backend and frontend listing every variable.
-- [ ] Add an empty `AI_WORKINGS.md`.
+- [x] Set `POSTGRES_DB=kindo` in `.devcontainer/.env`.
+- [x] Add `.devcontainer/.env` to `.gitignore`.
+- [x] Remove `version` from `docker-compose.yml`.
+- [x] Rebuild the dev container; check Postgres is reachable through `DATABASE_URL`, `uv` runs, and PyPI and npm installs work (if rejected, rerun `sudo /usr/local/bin/project-firewall.sh`).
+- [x] Create `backend/` with `uv`, ruff and pytest; an empty test run passes.
+- [x] Initialise Alembic with no migrations.
+- [x] Create `frontend/` with Vite, React, Tailwind, ESLint, Prettier and Vitest; an empty test run passes.
+- [x] Add `.env.example` files for backend and frontend listing every variable.
+- [x] Add an empty `AI_WORKINGS.md`.
 
 ### Step 2: Add config, models, migration and seed
 🤖 ai-audited(sonnet-5.5) · ❔ unverified (net-new)
